@@ -1,9 +1,12 @@
 package ru.hflabs.testtask
 
+import scala.util.Random
+
 object Defs {
   val minLineLength = 4;
   val maxLineLength = 20;
   val dictionarySize = 1000;
+  val stringPoolSize = 10000;
 
   type CodeType = Short
   type LineType = List[String]
@@ -166,8 +169,19 @@ object SuffixTreeHelper {
   }
 }
 
-class SubstringHelper {
-  def generateString() = {
+object SubstringHelper {
+  def generateStrings(): Defs.LinesType = {
+    val r = new Random()
+    val dictionary = (
+      for (i <- 0 until Defs.dictionarySize)
+        yield "str" + i).toArray
 
+    (for (i <- 0 until Defs.stringPoolSize) yield {
+      val length = Defs.minLineLength + r.nextInt().abs % (Defs.maxLineLength - Defs.minLineLength)
+      (for (j <- 0 until length) yield {
+        val symbolIndex = (r.nextInt() % Defs.dictionarySize).abs
+        dictionary(symbolIndex)
+      }).toList
+    }).toList
   }
 }
