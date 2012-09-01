@@ -67,9 +67,6 @@ class MinSubstringsTest {
     assertTrue(tree.matches(List("A", "B", "C")))
 
     tree.add(List("A", "D"), 1)
-    assertTrue(tree.matches(List("A")))
-    assertTrue(tree.matches(List("B")))
-    assertTrue(tree.matches(List("D")))
     assertTrue(tree.matches(List("A", "B")))
     assertTrue(tree.matches(List("A", "D")))
     assertTrue(tree.matches(List("A", "B", "C")))
@@ -77,9 +74,16 @@ class MinSubstringsTest {
 
     tree.add(List("F"), 1)
     assertFalse(tree.matches(List("F")))
+  }
 
-    println("tree = " + tree)
-
+  @Test def testSuffixTreeHelperCreate() {
+    val lines = List(List("KILL", "BILL"), List("KILL", "SANTA"))
+    val (tree, mapping) = SuffixTreeHelper.create(lines)
+    assertEquals(mapping("KILL"), 0)
+    assertEquals(mapping("BILL"), 1)
+    assertEquals(mapping("SANTA"), 2)
+    assertTrue(tree.matches(List(0, 1)))
+    assertTrue(tree.matches(List(0, 2)))
   }
 
 }

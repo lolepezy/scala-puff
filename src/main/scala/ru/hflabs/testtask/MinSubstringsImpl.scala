@@ -104,6 +104,8 @@ class SuffixTree[Code <% Ordered[Code], P](
       }
     }
   }
+
+  override def toString() = "{ " + initialNodes + " }"
 }
 
 object SuffixTreeHelper {
@@ -111,11 +113,11 @@ object SuffixTreeHelper {
   type DefaultNodeType = SuffixTreeNode[Defs.CodeType, Int]
   type DefaultTreeType = SuffixTree[Defs.CodeType, Int]
 
-  def create(lines: Defs.LinesType): DefaultTreeType = {
+  def create(lines: Defs.LinesType) = {
 
     def makeSuffixTree(c: List[Defs.CodeType]): DefaultNodeType = {
       /**
-       * TODO Add correct payload as an line index (if needed).
+       * TODO Add correct payload such as line index (if needed).
        */
       c match {
         case x :: Nil => new DefaultNodeType(x, 0)
@@ -130,12 +132,12 @@ object SuffixTreeHelper {
       val firstCode = line(0)
       val tree = maps.get(firstCode)
       tree match {
-        case None => maps.put(firstCode, makeSuffixTree(line.tail))
-        case Some(z) => z.add(line.tail, 0)
+        case None => maps.put(firstCode, makeSuffixTree(line))
+        case Some(z) => z.add(line, 0)
       }
     }
 
-    new DefaultTreeType(maps)
+    (new DefaultTreeType(maps), mapping)
   }
 
   /**
