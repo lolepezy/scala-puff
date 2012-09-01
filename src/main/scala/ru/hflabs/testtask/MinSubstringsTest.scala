@@ -51,4 +51,35 @@ class MinSubstringsTest {
     assertTrue(tree.matches(List("B", "E")))
   }
 
+  @Test def testSuffixTreeAdd() {
+    val tree = new Tree("A", 0)
+
+    tree.add(List("A", "B"), 1)
+    assertTrue(tree.matches(List("A")))
+    assertTrue(tree.matches(List("B")))
+    assertTrue(tree.matches(List("A", "B")))
+    assertFalse(tree.matches(List("B", "A")))
+
+    tree.add(List("A", "B", "C"), 1)
+    assertTrue(tree.matches(List("A")))
+    assertTrue(tree.matches(List("B")))
+    assertTrue(tree.matches(List("A", "B")))
+    assertTrue(tree.matches(List("A", "B", "C")))
+
+    tree.add(List("A", "D"), 1)
+    assertTrue(tree.matches(List("A")))
+    assertTrue(tree.matches(List("B")))
+    assertTrue(tree.matches(List("D")))
+    assertTrue(tree.matches(List("A", "B")))
+    assertTrue(tree.matches(List("A", "D")))
+    assertTrue(tree.matches(List("A", "B", "C")))
+    assertFalse(tree.matches(List("A", "B", "D")))
+
+    tree.add(List("F"), 1)
+    assertFalse(tree.matches(List("F")))
+
+    println("tree = " + tree)
+
+  }
+
 }

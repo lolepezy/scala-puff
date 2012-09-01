@@ -17,8 +17,10 @@ object Defs {
  */
 case class SuffixTreeNode[Code <% Ordered[Code], P](
   val code: Code,
-  val children: List[SuffixTreeNode[Code, P]],
+  var children: List[SuffixTreeNode[Code, P]],
   val payload: P) {
+
+  def this(code: Code, payload: P) = this(code, List[SuffixTreeNode[Code, P]](), payload)
 
   def find(c: List[Code]): List[P] = {
     c match {
@@ -53,8 +55,31 @@ case class SuffixTreeNode[Code <% Ordered[Code], P](
     }
   }
 
-  def add(c: List[Code]) {
-    // TODO Impement
+  /**
+   * Create new tree path for the given code string
+   *
+   * 1) A->(B,C) + AD = A->(B,C,D)
+   * 2) A->(B,C) + AB = _
+   * 3) A->(B,C) + ACD = A->(B,C->(D))
+   *
+   */
+  def add(c: List[Code], payload: P) {
+    c match {
+      case Nil => ()
+      case x :: Nil => {
+        // do nothing, we're in the already existing branch, it's totally ok. 
+      }
+      case x :: rest if (x == code) => {
+        val next = rest.head
+        val existingChild = children.filter(_.code == next)
+        existingChild.length match {
+          case 0 => children = new SuffixTreeNode[Code, P](next, payload) :: children
+          case 1 => existingChild.foreach(_.add(rest, payload))
+          case _ => throw new Exception("This should not happen: c = " + c + ", x = " + x + ", code = " + code)
+        }
+      }
+      case _ => throw new Exception("This should not happen")
+    }
   }
 }
 
@@ -93,7 +118,7 @@ object SuffixTreeHelper {
        * TODO Add correct payload as an line index (if needed).
        */
       c match {
-        case x :: Nil => new DefaultNodeType(x, List[DefaultNodeType](), 0)
+        case x :: Nil => new DefaultNodeType(x, 0)
         case x :: rest =>
           new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest)), 0)
       }
@@ -106,7 +131,7 @@ object SuffixTreeHelper {
       val tree = maps.get(firstCode)
       tree match {
         case None => maps.put(firstCode, makeSuffixTree(line.tail))
-        case Some(z) => z.add(line.tail)
+        case Some(z) => z.add(line.tail, 0)
       }
     }
 
