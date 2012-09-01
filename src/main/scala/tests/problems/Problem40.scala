@@ -1,6 +1,5 @@
 package tests.problems
 import org.junit.Test
-import common.Utils
 
 class Problem40 {
 

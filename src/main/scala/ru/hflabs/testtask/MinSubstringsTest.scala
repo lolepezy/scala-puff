@@ -5,7 +5,7 @@ import org.junit.Assert._
 class MinSubstringsTest {
 
   @Test def testStringEncode() {
-    val lines: Defs.LinesType = Array(Array("A", "B"), Array("A", "C", "D"))
+    val lines: Defs.LinesType = List(List("A", "B"), List("A", "C", "D"))
     val (encoded, mapping) = SuffixTreeHelper.encodeLines(lines)
     assertEquals(0.toShort, encoded(0)(0))
     assertEquals(1.toShort, encoded(0)(1))
