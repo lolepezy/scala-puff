@@ -75,11 +75,10 @@ case class SuffixTreeNode[Code <% Ordered[Code], P](
       case x :: rest if (x == code) => {
         val next = rest.head
         val existingChild = children.filter(_.code == next)
-        existingChild.length match {
-          case 0 => children = new SuffixTreeNode[Code, P](next, payload) :: children
-          case 1 => existingChild.foreach(_.add(rest, payload))
-          case _ => throw new Exception("This should not happen: c = " + c + ", x = " + x + ", code = " + code)
-        }
+        if (existingChild.isEmpty)
+          children = new SuffixTreeNode[Code, P](next, payload) :: children
+        else
+          existingChild.foreach(_.add(rest, payload))
       }
       case _ => throw new Exception("This should not happen")
     }
@@ -118,28 +117,35 @@ object SuffixTreeHelper {
 
   def create(lines: Defs.LinesType) = {
 
-    def makeSuffixTree(c: List[Defs.CodeType]): DefaultNodeType = {
-      /**
-       * TODO Add correct payload such as line index (if needed).
-       */
+    def makeSuffixTree(c: List[Defs.CodeType], payload: Int): DefaultNodeType = {
       c match {
-        case x :: Nil => new DefaultNodeType(x, 0)
+        case x :: Nil => new DefaultNodeType(x, payload)
         case x :: rest =>
-          new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest)), 0)
+          new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest, payload)), payload)
       }
     }
 
-    val (encodedLines, mapping) = encodeLines(lines)
-    val maps = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
-    for (line <- encodedLines if (line.size > 0)) {
-      val firstCode = line(0)
-      val tree = maps.get(firstCode)
-      tree match {
-        case None => maps.put(firstCode, makeSuffixTree(line))
-        case Some(z) => z.add(line, 0)
-      }
+    val (encodedLines, mapping) = Util.timed("encodeLines") {
+      () => encodeLines(lines)
     }
 
+    val maps = Util.timed("creation") {
+      () =>
+        {
+          val m = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
+          var index = 0
+          for (line <- encodedLines if (!line.isEmpty)) {
+            val firstCode = line(0)
+            val tree = m.get(firstCode)
+            tree match {
+              case None => m.put(firstCode, makeSuffixTree(line, index))
+              case Some(z) => z.add(line, index)
+            }
+            index = index + 1
+          }
+          m
+        }
+    }
     (new DefaultTreeType(maps), mapping)
   }
 

@@ -5,8 +5,9 @@ import org.junit.Test
 class MinSubstringsLoadTest {
 
   @Test def testBigTree() {
-    val strings = SubstringHelper.generateStrings
+    val strings = Util.timed("generateStrings")(SubstringHelper.generateStrings)
     val (tree, mapping) = SuffixTreeHelper.create(strings)
+    
     
     
   }
