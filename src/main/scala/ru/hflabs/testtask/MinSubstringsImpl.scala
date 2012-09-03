@@ -107,6 +107,18 @@ class SuffixTree[Code <% Ordered[Code], P](
     }
   }
 
+  def find(c: List[Code]): List[P] = c match {
+    case Nil => List()
+    case x :: rest => {
+      val tree = initialNodes.get(x)
+      tree match {
+        case None => List()
+        case Some(z) => z.find(rest)
+      }
+    }
+  }
+  
+  
   override def toString() = "{ " + initialNodes + " }"
 }
 
@@ -132,13 +144,13 @@ object SuffixTreeHelper {
     val maps = Util.timed("creation") {
       () =>
         {
-          val m = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
+          var m = new scala.collection.immutable.HashMap[Defs.CodeType, DefaultNodeType]
           var index = 0
           for (line <- encodedLines if (!line.isEmpty)) {
             val firstCode = line(0)
             val tree = m.get(firstCode)
             tree match {
-              case None => m.put(firstCode, makeSuffixTree(line, index))
+              case None => m += (firstCode -> makeSuffixTree(line, index))
               case Some(z) => z.add(line, index)
             }
             index = index + 1
@@ -154,7 +166,7 @@ object SuffixTreeHelper {
    * for better performance of further comparisons.
    */
   def encodeLines(lines: Defs.LinesType) = {
-    val mapping = new scala.collection.mutable.HashMap[String, Defs.CodeType]
+    var mapping = new scala.collection.immutable.HashMap[String, Defs.CodeType]
     var currentCode = 0;
     val encLineList = lines.map(line => {
       for (word <- line) yield {
@@ -162,7 +174,7 @@ object SuffixTreeHelper {
         s match {
           case None => {
             val code = currentCode.asInstanceOf[Defs.CodeType]
-            mapping.put(word, code)
+            mapping += (word -> code)
             currentCode += 1
             code
           }
