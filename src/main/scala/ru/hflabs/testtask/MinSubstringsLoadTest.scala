@@ -6,7 +6,8 @@ class MinSubstringsLoadTest {
 
   @Test def testBigTree() {
     val strings = Util.timed("generateStrings")(SubstringHelper.generateStrings)
-    val (tree, mapping) = SuffixTreeHelper.create(strings)
+    val (encodedLines, mapping) = SuffixTreeHelper.encodeLines(strings);
+    val tree = SuffixTreeHelper.create(encodedLines)
 
     val enc = strings.head.map(x => mapping(x))
 

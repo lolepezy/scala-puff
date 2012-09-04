@@ -1,6 +1,7 @@
 package ru.hflabs.testtask
 
 import scala.util.Random
+import scala.collection.immutable.TreeSet
 
 object Defs {
   val minLineLength = 4;
@@ -8,10 +9,10 @@ object Defs {
   val dictionarySize = 1000;
   val stringPoolSize = 10000;
 
-  type CodeType = Short
-  type LineType = List[String]
   type LinesType = List[List[String]]
-  type EncLineType = List[List[CodeType]]
+  type CodeType = Short
+  type EncLineType = List[CodeType]
+  type EncLinesType = List[List[CodeType]]
   type Index = Int
 }
 
@@ -117,8 +118,7 @@ class SuffixTree[Code <% Ordered[Code], P](
       }
     }
   }
-  
-  
+
   override def toString() = "{ " + initialNodes + " }"
 }
 
@@ -127,7 +127,7 @@ object SuffixTreeHelper {
   type DefaultNodeType = SuffixTreeNode[Defs.CodeType, Int]
   type DefaultTreeType = SuffixTree[Defs.CodeType, Int]
 
-  def create(lines: Defs.LinesType) = {
+  def create(lines: Defs.EncLinesType) = {
 
     def makeSuffixTree(c: List[Defs.CodeType], payload: Int): DefaultNodeType = {
       c match {
@@ -136,21 +136,16 @@ object SuffixTreeHelper {
           new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest, payload)), payload)
       }
     }
-
-    val (encodedLines, mapping) = Util.timed("encodeLines") {
-      () => encodeLines(lines)
-    }
-
     val maps = Util.timed("creation") {
       () =>
         {
-          var m = new scala.collection.immutable.HashMap[Defs.CodeType, DefaultNodeType]
+          val m = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
           var index = 0
-          for (line <- encodedLines if (!line.isEmpty)) {
+          for (line <- lines if (!line.isEmpty)) {
             val firstCode = line(0)
             val tree = m.get(firstCode)
             tree match {
-              case None => m += (firstCode -> makeSuffixTree(line, index))
+              case None => m.put(firstCode, makeSuffixTree(line, index))
               case Some(z) => z.add(line, index)
             }
             index = index + 1
@@ -158,7 +153,7 @@ object SuffixTreeHelper {
           m
         }
     }
-    (new DefaultTreeType(maps), mapping)
+    new DefaultTreeType(maps)
   }
 
   /**
@@ -185,6 +180,72 @@ object SuffixTreeHelper {
 
     (encLineList, mapping)
   }
+
+  // TreeSet is used to have sorted toList calls
+  def matchSubsetsRecursive(line: TreeSet[Defs.CodeType],
+    index: Defs.Index,
+    tree: SuffixTreeHelper.DefaultTreeType): Set[Set[Defs.CodeType]] = {
+    val subsets = line.map(x => line - x)
+    subsets.map(x => {
+      tree.find(x.toList).filter(_ != index) match {
+        case Nil => {
+          val smallerMatching = matchSubsetsRecursive(x, index, tree)
+          if (smallerMatching.isEmpty)
+            Set[Set[Defs.CodeType]]() + x
+          else
+            smallerMatching
+        }
+        case _ => Set[Set[Defs.CodeType]]()
+      }
+    }).foldLeft(Set[Set[Defs.CodeType]]())(_ ++ _).filter(!_.isEmpty)
+  }
+
+  // TreeSet is used to have sorted toList calls
+  def matchSubsets(line: TreeSet[Defs.CodeType],
+    index: Defs.Index,
+    tree: SuffixTreeHelper.DefaultTreeType): Set[Set[Defs.CodeType]] = {
+
+    val emptyMetaSet = Set[Set[Defs.CodeType]]()
+    var uniqueSubsets = emptyMetaSet ++
+      line.map(line - _).filter(s =>
+        tree.find(s.toList).exists(_ != index))
+
+    var smallerSubsetsFound = true
+    while (smallerSubsetsFound) {
+      val next = uniqueSubsets.map(us => {
+        // find smaller subsets
+        val subsets = us.map(us - _)
+        val smallerSubsets = subsets.filter(s =>
+          tree.find(s.toList).exists(_ != index))
+
+        if (smallerSubsets.isEmpty)
+          (emptyMetaSet + us, false)
+        else
+          (smallerSubsets, true)
+      }).foldLeft((emptyMetaSet, false))((x, y) => (x._1 ++ y._1, x._2 || y._2))
+
+      // if there were no "true" flags then there were 
+      // no smaller subsets, so we can stop the loop
+      smallerSubsetsFound = next._2
+      if (smallerSubsetsFound)
+        uniqueSubsets = next._1
+    }
+    uniqueSubsets
+  }
+
+  def searchUniqueSubset[Code, P](lines: Defs.LinesType) = {
+    val (encodedLines, mapping) = encodeLines(lines)
+    val tree = create(encodedLines)
+
+    var index = 0;
+    var x = new scala.collection.immutable.HashMap[Int, Set[Set[Defs.CodeType]]]
+    for (line <- encodedLines) yield {
+      val subsets = matchSubsets(new TreeSet[Defs.CodeType]() ++ line, index, tree)
+      x += (index -> subsets)
+      index = index + 1
+    }
+  }
+
 }
 
 object SubstringHelper {

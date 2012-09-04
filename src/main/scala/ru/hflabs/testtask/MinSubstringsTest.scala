@@ -78,7 +78,8 @@ class MinSubstringsTest {
 
   @Test def testSuffixTreeHelperCreate() {
     val lines = List(List("KILL", "BILL"), List("KILL", "SANTA"))
-    val (tree, mapping) = SuffixTreeHelper.create(lines)
+    val (encodedLines, mapping) = SuffixTreeHelper.encodeLines(lines)
+    val tree = SuffixTreeHelper.create(encodedLines)
     assertEquals(mapping("KILL"), 0)
     assertEquals(mapping("BILL"), 1)
     assertEquals(mapping("SANTA"), 2)

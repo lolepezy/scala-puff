@@ -1,8 +1,8 @@
 package tests
 import org.junit.runner.RunWith
 import org.junit._
-
 import Assert._
+import scala.collection.immutable.TreeSet
 
 class Exercise1 {
   def sqrt(initial: Double): Double = {
@@ -78,6 +78,11 @@ class SampleTest {
     }
     var end = System.currentTimeMillis();
     println(end - start);
+  }
+
+  @Test def sets {
+    val x = new TreeSet[Int]() ++ List(14, 5, 3, 4)
+    println(x.toList)
   }
 
 }
