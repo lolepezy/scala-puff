@@ -41,49 +41,50 @@ class CaseTreeTest {
 
   @Test def testSuffixTreeFind() {
 
-    assertEquals(Set(3), TreeFinder.find(
+    assertEquals(Set(3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
           SuffixLeafNode("B", 1))),
       List("A", "B", "C")).toSet)
 
-    assertEquals(Set(1), TreeFinder.find(
+    assertEquals(Set(1, 3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
           SuffixLeafNode("B", 1))),
       List("A", "B")).toSet)
 
-    assertEquals(Set(), TreeFinder.find(
+    assertEquals(Set(1, 3, 4), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
-          SuffixLeafNode("B", 1))),
+          SuffixLeafNode("B", 1), 
+          SuffixLeafNode("D", 4))),
       List("A")).toSet)
       
-    assertEquals(Set(1), TreeFinder.find(
+    assertEquals(Set(1, 3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
           SuffixLeafNode("B", 1))),
       List("B")).toSet)
 
-    assertEquals(Set(3), TreeFinder.find(
+    assertEquals(Set(3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
           SuffixLeafNode("B", 1))),
       List("C")).toSet)
 
-    assertEquals(Set(3), TreeFinder.find(
+    assertEquals(Set(3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
           SuffixLeafNode("B", 1))),
       List("B", "C")).toSet)
 
-    assertEquals(Set(3), TreeFinder.find(
+    assertEquals(Set(3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
