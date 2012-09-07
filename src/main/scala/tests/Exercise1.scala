@@ -82,7 +82,7 @@ class SampleTest {
 
   @Test def sets {
     val x = new TreeSet[Int]() ++ List(14, 5, 3, 4)
-    println(x.toList)
+    println(x.toList)    
   }
 
 }

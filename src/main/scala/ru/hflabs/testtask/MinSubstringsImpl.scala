@@ -2,6 +2,7 @@ package ru.hflabs.testtask
 
 import scala.util.Random
 import scala.collection.immutable.TreeSet
+import scala.collection.mutable.ListBuffer
 
 object Defs {
   val minLineLength = 4;
@@ -22,13 +23,16 @@ object Defs {
 case class SuffixTreeNode[Code <% Ordered[Code], P](
   val code: Code,
   var children: List[SuffixTreeNode[Code, P]],
-  val payload: P) {
+  var payload: Option[P]) {
 
-  def this(code: Code, payload: P) = this(code, List[SuffixTreeNode[Code, P]](), payload)
+  def this(code: Code, payload: Option[P]) = this(code, List[SuffixTreeNode[Code, P]](), payload)
 
   def find(c: List[Code]): List[P] = {
     c match {
-      case x :: Nil if (x == code) => List(payload)
+      case x :: Nil if (x == code) => payload match {
+        case None => List()
+        case Some(p) => List(p)
+      }
       case x :: rest => {
         if (x < code) List()
         else if (x == code)
@@ -67,23 +71,117 @@ case class SuffixTreeNode[Code <% Ordered[Code], P](
    * 3) A->(B,C) + ACD = A->(B,C->(D))
    *
    */
-  def add(c: List[Code], payload: P) {
+  def add(c: List[Code], _payload: P) {
     c match {
       case Nil => ()
       case x :: Nil => {
         // do nothing, we're in the already existing branch, it's totally ok. 
+        payload = Some(_payload)
       }
       case x :: rest if (x == code) => {
         val next = rest.head
         val existingChild = children.filter(_.code == next)
         if (existingChild.isEmpty)
-          children = new SuffixTreeNode[Code, P](next, payload) :: children
+          children = new SuffixTreeNode[Code, P](next, Some(_payload)) :: children
         else
-          existingChild.foreach(_.add(rest, payload))
+          existingChild.foreach(_.add(rest, _payload))
       }
       case _ => throw new Exception("This should not happen")
     }
   }
+}
+
+sealed abstract case class SuffixNode[Code <% Ordered[Code]](code: Code) {
+}
+
+case class SuffixLeafNode[Code <% Ordered[Code], P](
+  val c: Code, val payload: P)
+  extends SuffixNode[Code](c) {
+
+}
+
+case class SuffixXNode[Code <% Ordered[Code]](
+  val c: Code,
+  var children: List[SuffixNode[Code]]) extends SuffixNode[Code](c) {
+
+  def +=(child: SuffixNode[Code]) {
+    children = child :: children
+  }
+}
+
+object TreeFinder {
+
+  def find[Code <% Ordered[Code], P](node: SuffixNode[Code], c: List[Code]): List[P] = {
+    node match {
+      case leaf: SuffixLeafNode[Code, P] => {
+        c match {
+          case x :: Nil if (x == leaf.code) => List(leaf.payload)
+          case _ => List()
+        }
+      }
+      case SuffixXNode(code, children) => {
+        c match {
+          case x :: rest => {
+            if (x < code) List()
+            else if (x == code)
+              children.flatMap(find(_, rest)).toList
+            else
+              children.filter(x >= _.code).flatMap(find(_, c)).toList
+          }
+          case Nil => List()
+        }
+      }
+    }
+  }
+
+  def add[Code <% Ordered[Code], P](
+    node: SuffixXNode[Code],
+    c: List[Code],
+    payload: P): SuffixNode[Code] = {
+
+    c match {
+      case Nil => ()
+      case x :: Nil => {
+        // do nothing, we're in the already existing 
+        // branch, it's totally ok.
+      }
+      case x :: rest if (x == node.code) => {
+        val next = rest.head
+        val existingChildren = node.children.filter(_.code == next)
+        if (existingChildren.isEmpty) {
+          val child = rest match {
+            case y :: Nil => SuffixLeafNode[Code, P](y, payload)
+            case _ => add(SuffixXNode[Code](next, List()), rest, payload)
+          }
+          node += child
+        } else {
+          rest match {
+            case y :: Nil => {
+              if (!existingChildren.exists(_ match {
+                case SuffixLeafNode(_, _) => true
+                case _ => false
+              })) {
+                node += SuffixLeafNode[Code, P](next, payload)
+              }
+            }
+            case _ => {
+              val subtree = existingChildren.filter(_ match {
+                case SuffixXNode(_, _) => true
+                case _ => false
+              })
+              if (subtree.isEmpty)
+                node += add(SuffixXNode[Code](next, List()), rest, payload)
+              else
+                add(subtree.head match { case s @ SuffixXNode(_, _) => s } , rest, payload)
+            }
+          }
+        }
+      }
+      case _ => throw new Exception("This should not happen")
+    }
+    node
+  }
+
 }
 
 /**
@@ -91,19 +189,64 @@ case class SuffixTreeNode[Code <% Ordered[Code], P](
  * The key corresponds to the first symbol of a string.
  */
 class SuffixTree[Code <% Ordered[Code], P](
-  val initialNodes: scala.collection.Map[Code, SuffixTreeNode[Code, P]]) {
+  val trees: Array[Tuple2[Code, SuffixTreeNode[Code, P]]]) {
+
+  type NodeType = SuffixTreeNode[Code, P]
+
+  def findTreeIndex(c: Code): Option[Int] = {
+
+    def binarySearch(c: Code, begin: Int, end: Int): Int = {
+      val d = end - begin
+      if (d <= 1)
+        begin
+      else {
+        val m = d / 2
+        val x = trees(m)._1
+        if (x == c) m
+        else if (x < c)
+          binarySearch(c, m, end)
+        else
+          binarySearch(c, begin, m)
+      }
+    }
+
+    if (trees.isEmpty) None
+    else if (c < trees(0)._1) None
+    else if (c < trees.last._1)
+      Some(trees.length - 1)
+    else
+      Some(binarySearch(c, 0, trees.length))
+  }
+
+  /**
+   * Process all tree with index smaller that "index".
+   */
+  private def traverseTrees[R](index: Int, f: NodeType => R): List[R] = {
+    var i = 0;
+    var b = new ListBuffer[R]
+    while (i <= index) {
+      b += f(trees(i)._2)
+      i = i + 1
+    }
+    b.toList
+  }
 
   /**
    * Match the input line over the tree.
    */
   def matches(c: List[Code]): Boolean = c match {
     case Nil => false
-    case x :: Nil => initialNodes contains x
-    case x :: rest => {
-      val tree = initialNodes.get(x)
-      tree match {
+    case x :: Nil => {
+      findTreeIndex(x) match {
         case None => false
-        case Some(z) => z.matches(rest)
+        case Some(index) => true
+      }
+    }
+    case x :: rest => {
+      findTreeIndex(x) match {
+        case None => false
+        case Some(index) =>
+          traverseTrees(index, _.matches(c)).foldLeft(false)(_ || _)
       }
     }
   }
@@ -111,15 +254,16 @@ class SuffixTree[Code <% Ordered[Code], P](
   def find(c: List[Code]): List[P] = c match {
     case Nil => List()
     case x :: rest => {
-      val tree = initialNodes.get(x)
-      tree match {
+      findTreeIndex(x) match {
         case None => List()
-        case Some(z) => z.find(rest)
+        case Some(index) => {
+          traverseTrees(index, _.find(c)).flatten
+        }
       }
     }
   }
 
-  override def toString() = "{ " + initialNodes + " }"
+  override def toString() = "{ " + trees.map(x => x._1 + "->" + x._2).mkString(",") + " }"
 }
 
 object SuffixTreeHelper {
@@ -131,29 +275,27 @@ object SuffixTreeHelper {
 
     def makeSuffixTree(c: List[Defs.CodeType], payload: Int): DefaultNodeType = {
       c match {
-        case x :: Nil => new DefaultNodeType(x, payload)
+        case x :: Nil => new DefaultNodeType(x, None)
         case x :: rest =>
-          new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest, payload)), payload)
+          new DefaultNodeType(x, List[DefaultNodeType](makeSuffixTree(rest, payload)), Some(payload))
       }
     }
     val maps = Util.timed("creation") {
-      () =>
-        {
-          val m = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
-          var index = 0
-          for (line <- lines if (!line.isEmpty)) {
-            val firstCode = line(0)
-            val tree = m.get(firstCode)
-            tree match {
-              case None => m.put(firstCode, makeSuffixTree(line, index))
-              case Some(z) => z.add(line, index)
-            }
-            index = index + 1
-          }
-          m
+      val m = new scala.collection.mutable.HashMap[Defs.CodeType, DefaultNodeType]
+      var index = 0
+      for (line <- lines if (!line.isEmpty)) {
+        val firstCode = line(0)
+        val tree = m.get(firstCode)
+        tree match {
+          case None => m.put(firstCode, makeSuffixTree(line, index))
+          case Some(z) => z.add(line, index)
         }
+        index = index + 1
+      }
+      m
     }
-    new DefaultTreeType(maps)
+    val g: Array[Tuple2[Defs.CodeType, DefaultNodeType]] = maps.toArray
+    new DefaultTreeType(scala.util.Sorting.stableSort(g, (x, y) => x._1 < y._1))
   }
 
   /**
@@ -205,10 +347,22 @@ object SuffixTreeHelper {
     index: Defs.Index,
     tree: SuffixTreeHelper.DefaultTreeType): Set[Set[Defs.CodeType]] = {
 
+    println("line=" + line)
+    println("line.map(line - _)=" + line.map(line - _))
+    println("tree=" + tree)
+    println("index=" + index)
+
     val emptyMetaSet = Set[Set[Defs.CodeType]]()
     var uniqueSubsets = emptyMetaSet ++
       line.map(line - _).filter(s =>
-        tree.find(s.toList).exists(_ != index))
+        {
+          val x = tree.find(s.toList)
+          println("s.toList =" + s.toList)
+          println("x =" + x)
+          x.exists(_ != index)
+        })
+
+    println("uniqueSubsets=" + uniqueSubsets)
 
     var smallerSubsetsFound = true
     while (smallerSubsetsFound) {
@@ -217,6 +371,9 @@ object SuffixTreeHelper {
         val subsets = us.map(us - _)
         val smallerSubsets = subsets.filter(s =>
           tree.find(s.toList).exists(_ != index))
+
+        println("subsets=" + subsets)
+        println("smallerSubsets=" + smallerSubsets)
 
         if (smallerSubsets.isEmpty)
           (emptyMetaSet + us, false)
@@ -244,6 +401,7 @@ object SuffixTreeHelper {
       x += (index -> subsets)
       index = index + 1
     }
+    x
   }
 
 }

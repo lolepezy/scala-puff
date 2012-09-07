@@ -11,25 +11,19 @@ class MinSubstringsLoadTest {
 
     val enc = strings.head.map(x => mapping(x))
 
-    val iterationCount = 1000000
+    val iterationCount = 10000
     Util.timed("matches") {
-      () =>
-        {
-          var i = 0; while (i < iterationCount) {
-            val x = tree.matches(enc)
-            i = i + 1
-          }
-        }
+      var i = 0; while (i < iterationCount) {
+        val x = tree.matches(enc)
+        i = i + 1
+      }
     }
 
     Util.timed("finds") {
-      () =>
-        {
-          var i = 0; while (i < iterationCount) {
-            val x = tree.find(enc)
-            i = i + 1
-          }
-        }
+      var i = 0; while (i < iterationCount) {
+        val x = tree.find(enc)
+        i = i + 1
+      }
     }
   }
 }

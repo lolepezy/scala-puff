@@ -1,6 +1,7 @@
 package ru.hflabs.testtask
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Ignore
 
 class MinSubstringsTest {
 
@@ -26,11 +27,11 @@ class MinSubstringsTest {
     val tree = new Tree("B",
       List[Tree](
         new Tree("C", List[Tree](
-          new Tree("D", List[Tree](), 1),
-          new Tree("F", List[Tree](), 2)), 0),
+          new Tree("D", List[Tree](), Some(1)),
+          new Tree("F", List[Tree](), Some(2))), Some(0)),
         new Tree("D", List[Tree](
-          new Tree("E", List[Tree](), 3)), 0)),
-      0)
+          new Tree("E", List[Tree](), Some(3))), Some(0))),
+      Some(0))
 
     assertEquals(List(), tree.find(List("A", "C", "F")))
     assertEquals(List(3), tree.find(List("D", "E")))
@@ -52,7 +53,7 @@ class MinSubstringsTest {
   }
 
   @Test def testSuffixTreeAdd() {
-    val tree = new Tree("A", 0)
+    val tree = new Tree("A", Some(0))
 
     tree.add(List("A", "B"), 1)
     assertTrue(tree.matches(List("A")))
@@ -83,8 +84,32 @@ class MinSubstringsTest {
     assertEquals(mapping("KILL"), 0)
     assertEquals(mapping("BILL"), 1)
     assertEquals(mapping("SANTA"), 2)
+    assertTrue(tree.matches(List(0)))
+    assertTrue(tree.matches(List(1)))
+    assertTrue(tree.matches(List(2)))
     assertTrue(tree.matches(List(0, 1)))
     assertTrue(tree.matches(List(0, 2)))
+
+    println(tree)
+    
+    assertEquals(List(0), tree.find(List(0)))
+    assertEquals(List(0), tree.find(List(0)))
+  }
+
+  @Ignore
+  @Test def testUniqueSubSet() {
+    val lines = List(List("A", "B"), List("A", "C"))
+    val subsets = SuffixTreeHelper.searchUniqueSubset(lines)
+    println("subsets = " + subsets)
+  }
+
+  @Test 
+  def testFind() {
+    val t = SuffixTreeNode(0,
+      List(
+        SuffixTreeNode(2, List(), Some(1)),
+        SuffixTreeNode(1, List(), Some(0))), Some(0));
+    println(t.find(List(2)))
   }
 
 }
