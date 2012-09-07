@@ -280,7 +280,7 @@ object SuffixTreeHelper {
       }).foldLeft((emptyMetaSet, false))((x, y) => (x._1 ++ y._1, x._2 || y._2))
 
       println("next = " + next)
-      
+
       // if there were no "true" flags then there were 
       // no smaller subsets, so we can stop the loop
       smallerSubsetsFound = next._2
@@ -299,9 +299,10 @@ object SuffixTreeHelper {
     for (line <- encodedLines) yield {
       val subsets = matchSubsets(new TreeSet[Defs.CodeType]() ++ line, index, tree)
       x += (index -> subsets)
-      index = index + 1
+      index += 1
     }
-    x
+    val reverseMapping = mapping.map(kv => (kv._2, kv._1))
+    x.map(ss => (ss._1, ss._2.map(t => t.map(reverseMapping(_)))))
   }
 
 }
