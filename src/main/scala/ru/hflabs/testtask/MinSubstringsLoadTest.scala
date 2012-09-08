@@ -20,5 +20,10 @@ class MinSubstringsLoadTest {
         i = i + 1
       }
     }
+
+    val subsets = Util.timed("subsets") {
+      SuffixTreeHelper.searchUniqueSubset(strings)
+    }
+
   }
 }

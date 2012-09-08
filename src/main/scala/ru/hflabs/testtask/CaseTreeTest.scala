@@ -59,10 +59,10 @@ class CaseTreeTest {
       SuffixXNode("A",
         List(
           SuffixXNode("B", List(SuffixLeafNode("C", 3))),
-          SuffixLeafNode("B", 1), 
+          SuffixLeafNode("B", 1),
           SuffixLeafNode("D", 4))),
       List("A")).toSet)
-      
+
     assertEquals(Set(1, 3), TreeFinder.getSubsetPayloads(
       SuffixXNode("A",
         List(
@@ -91,6 +91,34 @@ class CaseTreeTest {
           SuffixLeafNode("B", 1))),
       List("A", "C")).toSet)
 
+  }
+
+  @Test def testUniqueSubSet1() {
+    val lines = List(List("A", "B"), List("A", "C"))
+    val subsets = SuffixTreeHelper.searchUniqueSubset(lines)
+    assertEquals(subsets(0), Set(Set("B")))
+    assertEquals(subsets(1), Set(Set("C")))
+  }
+
+  @Test def testUniqueSubSet2() {
+    val lines = List(List("A", "B", "C"), List("A", "C", "D"))
+    val subsets = SuffixTreeHelper.searchUniqueSubset(lines)
+    assertEquals(subsets(0), Set(Set("B")))
+    assertEquals(subsets(1), Set(Set("D")))
+  }
+
+  @Test def testUniqueSubSet3() {
+    val lines = List(
+      List("средняя", "муниципальная", "общеобразовательная", "школа", "№1125", "города", "Москвы"),
+      List("средняя", "муниципальная", "общеобразовательная", "школа", "№1126", "города", "Москвы"),
+      List("средняя", "муниципальная", "общеобразовательная", "школа", "№1125", "города", "Санкт-Петербурга"),
+      List("средняя", "муниципальная", "общеобразовательная", "гимназия", "№1126", "города", "Санкт-Петербурга"))
+
+    val subsets = SuffixTreeHelper.searchUniqueSubset(lines)
+    assertEquals(Set(Set("№1125", "Москвы")), subsets(0))
+    assertEquals(Set(Set("школа", "№1126"), Set("№1126", "Москвы")), subsets(1))
+    assertEquals(Set(Set("№1125", "Санкт-Петербурга"), Set("школа", "Санкт-Петербурга")), subsets(2))
+    assertEquals(Set(Set("гимназия")), subsets(3))
   }
 
 }

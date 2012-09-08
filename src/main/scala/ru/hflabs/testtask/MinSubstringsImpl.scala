@@ -159,6 +159,7 @@ class SuffixTree[Code <% Ordered[Code], P](
   private def traverseTrees[R](index: Int, f: NodeType => R): List[R] = {
     var i = 0;
     var b = new ListBuffer[R]
+    println("index - i = " + (index - i))
     while (i <= index) {
       b += f(trees(i)._2)
       i = i + 1
@@ -242,61 +243,61 @@ object SuffixTreeHelper {
     index: Defs.Index,
     tree: SuffixTreeHelper.DefaultTreeType): Set[Set[Defs.CodeType]] = {
 
-    println("line=" + line)
-    println("line.map(line - _)=" + line.map(line - _))
-    println("tree=" + tree)
-    println("index=" + index)
-
     val emptyMetaSet = Set[Set[Defs.CodeType]]()
-    var uniqueSubsets = emptyMetaSet ++
-      line.map(line - _).filter(s =>
-        {
-          val x = tree.find(s.toList)
-          println("s.toList =" + s.toList)
-          println("x =" + x)
-          val e = x.exists(_ != index)
-          println("e = " + e)
-          !e
-        })
 
-    println("uniqueSubsets=" + uniqueSubsets)
+    var optimalSubsets = new scala.collection.immutable.HashSet[Set[Defs.CodeType]]
+    optimalSubsets += line
 
+    var minSize = line.size
     var smallerSubsetsFound = true
-    while (smallerSubsetsFound) {
-      val next = uniqueSubsets.map(us => {
-        // find smaller subsets
-        println("us = " + us)
-        val subsets = us.map(us - _)
-        val smallerSubsets = subsets.filter(s =>
-          !tree.find(s.toList).exists(_ != index))
 
-        println("subsets=" + subsets)
-        println("smallerSubsets=" + smallerSubsets)
+    var findCount = 0;
+    Util.timed("setCycle") {
+      while (smallerSubsetsFound) {
+        val next = optimalSubsets.foreach(us => {
+          // find smaller subsets
+          val subsets = us.map(us - _)
+          val betterSubsets = subsets.filter(s =>
+            !{ findCount += 1; tree.find(s.toList).exists(_ != index) }).filter(!_.isEmpty)
 
-        if (!smallerSubsets.exists(!_.isEmpty))
-          (emptyMetaSet + us, false)
-        else
-          (smallerSubsets, true)
-      }).foldLeft((emptyMetaSet, false))((x, y) => (x._1 ++ y._1, x._2 || y._2))
-
-      println("next = " + next)
-
-      // if there were no "true" flags then there were 
-      // no smaller subsets, so we can stop the loop
-      smallerSubsetsFound = next._2
-      if (smallerSubsetsFound)
-        uniqueSubsets = next._1
+          if (betterSubsets.isEmpty) {
+            if (us.size > minSize)
+              optimalSubsets -= us
+            smallerSubsetsFound = false
+          } else {
+            smallerSubsetsFound = true
+            optimalSubsets -= us
+            optimalSubsets ++= betterSubsets.filter(_.size <= minSize)
+            minSize = betterSubsets.foldLeft(Int.MaxValue)((mSize, ss) => {
+              val size = ss.size
+              if (size < mSize) size else mSize
+            })
+          }
+        })
+        optimalSubsets = optimalSubsets.filter(_.size <= minSize)
+        println("optimalSubsets.size = " + optimalSubsets.size)
+      }
+      println("findCount = " + findCount)
     }
-    uniqueSubsets
+
+
+    minSize = optimalSubsets.foldLeft(Int.MaxValue)((minSize, ss) => {
+      val size = ss.size
+      if (size < minSize) size else minSize
+    })
+
+    optimalSubsets.filter(_.size == minSize).toSet
   }
 
   def searchUniqueSubset[Code, P](lines: Defs.LinesType) = {
-    val (encodedLines, mapping) = SubstringHelper.encodeLines(lines)
+    var (encodedLines, mapping) = SubstringHelper.encodeLines(lines)
+    encodedLines = encodedLines.map(e => e.sortWith(_ <= _))
     val tree = create(encodedLines)
 
     var index = 0;
     var x = new scala.collection.immutable.HashMap[Int, Set[Set[Defs.CodeType]]]
     for (line <- encodedLines) yield {
+//      println("index = " + index + ", line = " + line)
       val subsets = matchSubsets(new TreeSet[Defs.CodeType]() ++ line, index, tree)
       x += (index -> subsets)
       index += 1
