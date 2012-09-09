@@ -159,7 +159,7 @@ class SuffixTree[Code <% Ordered[Code], P](
   private def traverseTrees[R](index: Int, f: NodeType => R): List[R] = {
     var i = 0;
     var b = new ListBuffer[R]
-    println("index - i = " + (index - i))
+    //    println("index - i = " + (index - i))
     while (i <= index) {
       b += f(trees(i)._2)
       i = i + 1
@@ -280,7 +280,6 @@ object SuffixTreeHelper {
       println("findCount = " + findCount)
     }
 
-
     minSize = optimalSubsets.foldLeft(Int.MaxValue)((minSize, ss) => {
       val size = ss.size
       if (size < minSize) size else minSize
@@ -289,19 +288,48 @@ object SuffixTreeHelper {
     optimalSubsets.filter(_.size == minSize).toSet
   }
 
+  def getSubsets(line: List[Defs.CodeType],
+    index: Defs.Index,
+    codeMap: CodeMap[Defs.CodeType, Int]): Set[Set[Defs.CodeType]] = {
+
+    val emptyMetaSet = Set[Set[Defs.CodeType]]()
+
+    var _1CodeSubsets = line.filter(codeMap(_) match {
+      case None => false
+      case Some(x) => true
+    }).toSet.map((z: Defs.CodeType) => Set[Defs.CodeType](z))
+
+    if (!line.isEmpty)
+      _1CodeSubsets
+    else {
+      // TODO try 2, 3,...etc code subsets
+      emptyMetaSet
+
+    }
+  }
+
   def searchUniqueSubset[Code, P](lines: Defs.LinesType) = {
     var (encodedLines, mapping) = SubstringHelper.encodeLines(lines)
     encodedLines = encodedLines.map(e => e.sortWith(_ <= _))
     val tree = create(encodedLines)
 
-    var index = 0;
     var x = new scala.collection.immutable.HashMap[Int, Set[Set[Defs.CodeType]]]
+    var codeMap = new CodeMap[Defs.CodeType, Int]
+
+    var index = 0;
+    Util.timed("create codeMap") {
+      encodedLines.foreach(line => { codeMap ++ (line, index); index += 1 })
+    }
+
+    index = 0
     for (line <- encodedLines) yield {
-//      println("index = " + index + ", line = " + line)
-      val subsets = matchSubsets(new TreeSet[Defs.CodeType]() ++ line, index, tree)
+      //      println("index = " + index + ", line = " + line)
+      //      val subsets = matchSubsets(new TreeSet[Defs.CodeType]() ++ line, index, tree)
+      val subsets = getSubsets(line, index, codeMap)
       x += (index -> subsets)
       index += 1
     }
+
     val reverseMapping = mapping.map(kv => (kv._2, kv._1))
     x.map(ss => (ss._1, ss._2.map(t => t.map(reverseMapping(_)))))
   }
