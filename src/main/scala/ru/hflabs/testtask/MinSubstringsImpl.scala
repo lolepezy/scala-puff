@@ -1,5 +1,6 @@
 package ru.hflabs.testtask
 
+import scala.annotation.tailrec
 import scala.util.Random
 import scala.collection.immutable.TreeSet
 import scala.collection.mutable.ListBuffer
@@ -288,23 +289,62 @@ object SuffixTreeHelper {
     optimalSubsets.filter(_.size == minSize).toSet
   }
 
+  type CodeMapType = CodeMap[Defs.CodeType, Defs.Index]
+
+  /**
+   * Create subsets from the smallest to the largest ones.
+   *
+   */
   def getSubsets(line: List[Defs.CodeType],
     index: Defs.Index,
-    codeMap: CodeMap[Defs.CodeType, Int]): Set[Set[Defs.CodeType]] = {
+    codeMap: CodeMapType): Set[Set[Defs.CodeType]] = {
+
+    type PairType = Tuple3[Defs.CodeType, Defs.CodeType, scala.collection.mutable.HashSet[Defs.Index]]
+
+    /**
+     * Extract all pair of codes in the given line
+     */
+    def getAllLinePairs(line: List[Defs.CodeType]): List[PairType] =
+      line match {
+        case Nil => List[PairType]()
+        case x :: Nil => List[PairType]()
+        case x :: rest => {
+          rest.map(y => {
+            codeMap(x, y) match {
+              case None => throw new Exception("This should not happen, x = " + x + ", line = " + line)
+              case Some(z) => (x, y, z)
+            }
+          }) ++ getAllLinePairs(rest)
+        }
+      }
 
     val emptyMetaSet = Set[Set[Defs.CodeType]]()
 
+    // first try to find one-code unique subsets
     var _1CodeSubsets = line.filter(codeMap(_) match {
       case None => false
-      case Some(x) => true
-    }).toSet.map((z: Defs.CodeType) => Set[Defs.CodeType](z))
+      case Some(x) => !x.exists(_ != index)
+    }).map(Set(_)).toSet
 
     if (!line.isEmpty)
       _1CodeSubsets
     else {
-      // TODO try 2, 3,...etc code subsets
-      emptyMetaSet
 
+      // TODO try 2, 3,...etc code subsets
+      val codePairs = getAllLinePairs(line)
+
+      val goodPairs = codePairs.filter(x => !x._3.exists(_ != index))
+      if (!goodPairs.isEmpty)
+        goodPairs.map(x => Set(x._1, x._2))
+      else {
+        val firstCodeMap = codePairs.map(x => x._1 -> (x._2, x._3))
+        var goodSubsets = goodPairs.map(x => Set(x._1, x._2))
+        goodSubsets.map(s => {
+          
+        })
+      }
+
+      emptyMetaSet
     }
   }
 

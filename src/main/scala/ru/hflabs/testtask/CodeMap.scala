@@ -2,7 +2,6 @@ package ru.hflabs.testtask
 import scala.annotation.tailrec
 
 class CodeMap[Code, P] {
-
   type Key = Tuple2[Code, Code]
   type SetType = scala.collection.mutable.HashSet[P]
 
@@ -55,5 +54,5 @@ class CodeMap[Code, P] {
 
   def apply(code1: Code, code2: Code) = codePairMap.get((code1, code2))
   def apply(code: Code) = codeSingleMap.get(code)
-  
+
 }
