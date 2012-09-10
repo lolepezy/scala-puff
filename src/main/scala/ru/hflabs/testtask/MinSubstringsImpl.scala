@@ -299,7 +299,8 @@ object SuffixTreeHelper {
     index: Defs.Index,
     codeMap: CodeMapType): Set[Set[Defs.CodeType]] = {
 
-    type PairType = Tuple3[Defs.CodeType, Defs.CodeType, scala.collection.mutable.HashSet[Defs.Index]]
+    type IndexSetType = scala.collection.mutable.HashSet[Defs.Index]
+    type PairType = Tuple3[Defs.CodeType, Defs.CodeType, IndexSetType]
 
     /**
      * Extract all pair of codes in the given line
@@ -318,6 +319,16 @@ object SuffixTreeHelper {
         }
       }
 
+    def getFirstCodeMap(codePairs: List[PairType]) = {
+      val emptyMap = Map[Defs.CodeType, List[Tuple2[Defs.CodeType, IndexSetType]]]()
+      codePairs.foldLeft(emptyMap)((m, x) => {
+        m.get(x._1) match {
+          case None => m + (x._1 -> List((x._2, x._3)))
+          case Some(z) => m + (x._1 -> ((x._2, x._3) :: z))
+        }
+      })
+    }
+
     val emptyMetaSet = Set[Set[Defs.CodeType]]()
 
     // first try to find one-code unique subsets
@@ -326,25 +337,29 @@ object SuffixTreeHelper {
       case Some(x) => !x.exists(_ != index)
     }).map(Set(_)).toSet
 
-    if (!line.isEmpty)
+    if (!_1CodeSubsets.isEmpty)
       _1CodeSubsets
     else {
 
       // TODO try 2, 3,...etc code subsets
       val codePairs = getAllLinePairs(line)
+      println("line = " + line + ", index= " + index)
+      println("codePairs = " + codePairs)
 
       val goodPairs = codePairs.filter(x => !x._3.exists(_ != index))
+      println("goodPairs = " + goodPairs)
       if (!goodPairs.isEmpty)
-        goodPairs.map(x => Set(x._1, x._2))
+        goodPairs.map(x => Set(x._1, x._2)).toSet
       else {
-        val firstCodeMap = codePairs.map(x => x._1 -> (x._2, x._3))
-        var goodSubsets = goodPairs.map(x => Set(x._1, x._2))
+        val firstCodeMap = getFirstCodeMap(codePairs)
+        var goodSubsets = goodPairs.map(x => List(x._1, x._2))
         goodSubsets.map(s => {
-          
+          val last = s.last
+          firstCodeMap.get(last)
         })
+        emptyMetaSet
       }
 
-      emptyMetaSet
     }
   }
 

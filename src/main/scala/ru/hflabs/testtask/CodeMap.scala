@@ -55,4 +55,5 @@ class CodeMap[Code, P] {
   def apply(code1: Code, code2: Code) = codePairMap.get((code1, code2))
   def apply(code: Code) = codeSingleMap.get(code)
 
+  override def toString = "{ singles = " + codeSingleMap + ", pairs = " + codePairMap + "}"
 }
