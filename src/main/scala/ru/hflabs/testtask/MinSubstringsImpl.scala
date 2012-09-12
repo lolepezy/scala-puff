@@ -109,7 +109,7 @@ object SuffixTreeHelper {
     }
   }
 
-  def searchUniqueSubset[Code, P](lines: Defs.LinesType) = {
+  def searchUniqueSubsets[Code, P](lines: Defs.LinesType) = {
     var (encodedLines, mapping) = SubstringHelper.encodeLines(lines)
     encodedLines = encodedLines.map(e => e.sortWith(_ <= _))
 

@@ -14,7 +14,7 @@ class MinSubstringsLoadTest {
     val iterationCount = 10000
 
     val subsets = Util.timed("subsets") {
-      SuffixTreeHelper.searchUniqueSubset(strings)
+      SuffixTreeHelper.searchUniqueSubsets(strings)
     }
 
   }
