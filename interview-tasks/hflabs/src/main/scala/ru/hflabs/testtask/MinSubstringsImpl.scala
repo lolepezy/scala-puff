@@ -65,7 +65,8 @@ object SuffixTreeHelper {
      */
     @tailrec
     def getExtendedSubsets(trialSubsets: List[Tuple2[Vector[Code], IndexSetType]],
-      firstCodeMap: Map[Code, List[Tuple2[Code, IndexSetType]]], maxSubsetSize: Int): Set[List[Code]] = {
+        firstCodeMap: Map[Code, List[Tuple2[Code, IndexSetType]]], 
+        maxSubsetSize: Int): Set[List[Code]] = {
       if (trialSubsets.isEmpty)
         emptyMetaSet
       else {
@@ -205,3 +206,5 @@ object SubstringHelper {
     (encLineList, mapping)
   }
 }
+
+
