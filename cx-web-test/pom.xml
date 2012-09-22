@@ -10,11 +10,15 @@
   <packaging>war</packaging>
   <name>Simple Circumflex Application</name>
 
-  <properties>
-    <cx.version>2.3</cx.version>
-    <cx.port>8180</cx.port>
-    <cx.router>ru.cxtest.Main</cx.router>
-  </properties>
+	<properties>
+		<cx.version>2.3</cx.version>
+		<cx.port>8180</cx.port>
+		<cx.router>ru.cxtest.Main</cx.router>
+		<orm.connection.driver>org.postgresql.Driver</orm.connection.driver>
+		<orm.connection.url>jdbc:postgresql://localhost:5432/cxtest</orm.connection.url>
+		<orm.connection.username>cxtest</orm.connection.username>
+		<orm.connection.password>cxtest</orm.connection.password>
+	</properties>
 
   <dependencies>
     <dependency>
