@@ -52,7 +52,33 @@ class SampleTest {
     for (x <- 0 until 10) {
       val m = new scala.collection.mutable.HashMap[Int, Int];
       var i = 0;
-      while (i < 100000) { i = i + 1; m.put(i, i); };
+      while (i < 100000) {
+        i = i + 1;
+        m.put(i, i);
+        if (i % 2 == 0) {
+          val k = math.sqrt(i)
+          i += k.toInt
+          i -= k.toInt
+        }
+      }
+    }
+    var end = System.currentTimeMillis();
+    println(end - start);
+  }
+
+  @Test def perfTest11 {
+    var start = System.currentTimeMillis();
+    for (x <- 0 until 10) {
+      var m = new scala.collection.immutable.HashMap[Int, Int];
+      var i = 0;
+      while (i < 100000) {
+        i = i + 1; m += (i -> i);
+        if (i % 2 == 0) {
+          val k = math.sqrt(i)
+          i += k.toInt
+          i -= k.toInt
+        }
+      };
     }
     var end = System.currentTimeMillis();
     println(end - start);
@@ -63,7 +89,15 @@ class SampleTest {
     for (x <- 0 until 10) {
       val m = new java.util.HashMap[Int, Int];
       var i = 0;
-      while (i < 100000) { i = i + 1; m.put(i, i); };
+      while (i < 100000) {
+        i = i + 1;
+        m.put(i, i);
+        if (i % 2 == 0) {
+          val k = math.sqrt(i)
+          i += k.toInt
+          i -= k.toInt
+        }
+      }
     }
     var end = System.currentTimeMillis();
     println(end - start);
@@ -74,7 +108,15 @@ class SampleTest {
     for (x <- 0 until 10) {
       val m = new java.util.concurrent.ConcurrentHashMap[Int, Int];
       var i = 0;
-      while (i < 100000) { i = i + 1; m.put(i, i); };
+      while (i < 100000) {
+        i = i + 1
+        m.put(i, i)
+        if (i % 2 == 0) {
+          val k = math.sqrt(i)
+          i += k.toInt
+          i -= k.toInt
+        }
+      }
     }
     var end = System.currentTimeMillis();
     println(end - start);
@@ -82,7 +124,17 @@ class SampleTest {
 
   @Test def sets {
     val x = new TreeSet[Int]() ++ List(14, 5, 3, 4)
-    println(x.toList)    
+    println(x.toList)
+  }
+
+  @Test
+  def sql {
+    val x = 10
+    val q = """
+      SELECT * FROM persons
+      WHERE id = '{x}'
+    """
+    println("q = " + q)
   }
 
 }
