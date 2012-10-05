@@ -1,15 +1,17 @@
 package nokia.rovers
 
 import scala.io.Source
+import scala.annotation.tailrec
 
-sealed abstract case class Cardinal(
-  val left: Cardinal,
-  val right: Cardinal)
+sealed abstract case class Cardinal {
+  val left: Cardinal
+  val right: Cardinal
+}
 
-case object N extends Cardinal(W, E)
-case object S extends Cardinal(E, W)
-case object E extends Cardinal(N, S)
-case object W extends Cardinal(S, N)
+case object N extends Cardinal { val left = W; val right = E }
+case object S extends Cardinal { val left = E; val right = W }
+case object E extends Cardinal { val left = N; val right = S }
+case object W extends Cardinal { val left = S; val right = N }
 
 sealed abstract case class Move
 case object Left extends Move
@@ -19,7 +21,7 @@ case object Forward extends Move
 /**
  * The generic position definition.
  */
-class Position(var x: Int, var y: Int, var cardinal: Cardinal) {
+case class Position(val x: Int, val y: Int, val cardinal: Cardinal) {
   def move(m: Move) = m match {
     case Left => new Position(x, y, cardinal.left)
     case Right => new Position(x, y, cardinal.right)
@@ -41,14 +43,15 @@ class Rover(
   val moves: List[Move],
   val boudaries: (Int, Int)) {
 
-  def makeAllMoves(pos: Position, mov: List[Move], previousRovers: List[Position]): Position =
+  @tailrec
+  private def makeAllMoves(pos: Position, mov: List[Move], previousRovers: List[Position]): Position =
     mov match {
       case Nil => pos
       case m :: rest => {
         val nextPos = pos.move(m)
-        if (nextPos.x < 0 || nextPos.x >= boudaries._1 ||
-          nextPos.y < 0 || nextPos.y >= boudaries._2)
-          throw new Exception("The position")
+        if (nextPos.x < 0 || nextPos.x > boudaries._1 ||
+          nextPos.y < 0 || nextPos.y > boudaries._2)
+          throw new Exception("The position " + nextPos + " is out of the plateau")
 
         // if we are at the same position as one of the previous rovers,
         // then we should throw an error
@@ -64,10 +67,37 @@ class Rover(
     makeAllMoves(initialPosition, moves, previousRovers)
 }
 
-object Main extends App {
+/**
+ * Helper class containing all the 
+ */
+class NASAData(
+  val initialPositions: List[Position],
+  val moves: List[List[Move]],
+  val maxX: Int,
+  val maxY: Int) {
 
-  def readData(lines : List[String]) = {
-    val Array(maxX, maxY) = lines.head.split("\\s") map (_.toInt)
+  def getLastPositions = {
+    // create rovers from initial positions and move lists 
+    var index = 0
+    val rovers = initialPositions zip moves map (
+      ipM => new Rover(
+        { val i = index; index += 1; i },
+        ipM._1, ipM._2, (maxX, maxY)))
+
+    // map them to last positions
+    var previousRovers = List[Position]()
+    (for (r <- rovers) yield {
+      val lastP = r.lastPosition(previousRovers)
+      previousRovers = lastP :: previousRovers
+      lastP
+    }).toList
+  }
+}
+
+object NASAData {
+
+  def readData(lines: List[String]) = {
+    val Array(maxX, maxY) = lines.head.split("\\s") map (_.trim.toInt)
 
     // TODO here we should actually throw something more appropriate 
     assert(maxX > 0)
@@ -101,33 +131,8 @@ object Main extends App {
 
     assert(initialPositions.size == moves.size)
 
-    (initialPositions, moves, maxX, maxY)
+    new NASAData(initialPositions, moves, maxX, maxY)
   }
-
-  def getLastPostions() = {
-    // create rovers from initial positions and move lists 
-    var index = 0
-    val rovers = initialPositions zip moves map (
-      ipM => new Rover({ val i = index; index += 1; i }, ipM._1, ipM._2, (maxX, maxY)))
-
-    // map them to last positions
-    var previousRovers = List[Position]()
-    (for (r <- rovers) yield {
-      val lastP = r.lastPosition(previousRovers)
-      previousRovers = lastP :: previousRovers
-      lastP
-    }).toList
-  }
-
-  val fileName = args(0)
-  if (fileName == null) {
-    Console.println("Usage: scala fileName.scala <inputFile>");
-    sys.exit(1);
-  }
-
-  val lines = Source.fromFile(fileName).getLines.toList
-  val (initialPositions, moves, maxX, maxY) = readData(lines)
-  val lastPostions = getLastPostions()
 }
-
+ 
 
