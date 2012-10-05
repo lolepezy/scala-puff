@@ -3,6 +3,7 @@ package nokia.rovers
 import org.junit.Test
 import org.junit.Assert._
 
+@Test
 class RoverTest {
 
   @Test def testCardinal() {
