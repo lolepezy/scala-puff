@@ -68,7 +68,7 @@ class Rover(
 }
 
 /**
- * Helper class containing all the 
+ * Helper class managing all the rovers and their data.
  */
 class NASAData(
   val initialPositions: List[Position],
@@ -94,6 +94,9 @@ class NASAData(
   }
 }
 
+/**
+ * Companion object for NASAData.
+ */
 object NASAData {
 
   def readData(lines: List[String]) = {
