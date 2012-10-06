@@ -8,8 +8,10 @@ class RoverTest {
 
   @Test def testCardinal() {
     assertEquals(Position(1, 1, N), Position(1, 1, E).move(Left))
+    assertEquals(Position(1, 1, N), Position(1, 1, W).move(Right))
     assertEquals(Position(0, 1, N), Position(0, 0, N).move(Forward))
     assertEquals(Position(1, 0, E), Position(0, 0, E).move(Forward))
+    assertEquals(Position(0, 1, W), Position(1, 1, W).move(Forward))
   }
 
   @Test def testExample() {
