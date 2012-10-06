@@ -8,6 +8,12 @@ sealed abstract case class Cardinal {
   val right: Cardinal
 }
 
+/**
+ * TODO Make is work just as
+ *
+ * "case object N extends Cardinal(W, E)", which is more concise,
+ * but has problems with order of initialization.
+ */
 case object N extends Cardinal { val left = W; val right = E }
 case object S extends Cardinal { val left = E; val right = W }
 case object E extends Cardinal { val left = N; val right = S }
@@ -35,10 +41,11 @@ case class Position(val x: Int, val y: Int, val cardinal: Cardinal) {
 }
 
 /**
- * The rover is represented by initial position and list of movements.
+ * The rover is represented by initial position
+ * and the list of movements.
  */
 class Rover(
-  val roverId: Int,
+  val roverId: String,
   val initialPosition: Position,
   val moves: List[Move],
   val boudaries: (Int, Int)) {
@@ -53,8 +60,8 @@ class Rover(
           nextPos.y < 0 || nextPos.y > boudaries._2)
           throw new Exception("The position " + nextPos + " is out of the plateau")
 
-        // if we are at the same position as one of the previous rovers,
-        // then we should throw an error
+        // if we are at the same position as the one of the previous 
+        // rovers, then we should throw an error
         val crashes = previousRovers.filter(p => nextPos.x == p.x && nextPos.y == p.y)
         if (crashes.isEmpty)
           makeAllMoves(nextPos, rest, previousRovers)
@@ -81,10 +88,11 @@ class NASAData(
     var index = 0
     val rovers = initialPositions zip moves map (
       ipM => new Rover(
-        { val i = index; index += 1; i },
+        "rover" + { val i = index; index += 1; i },
         ipM._1, ipM._2, (maxX, maxY)))
 
-    // map them to last positions
+    // map them to last positions, previousRovers is used to find 
+    // crashes, i.e. situations, where two rovers have the same coordinates
     var previousRovers = List[Position]()
     (for (r <- rovers) yield {
       val lastP = r.lastPosition(previousRovers)
