@@ -88,10 +88,10 @@ class DispatchActor extends Actor {
 
 class RandomActors {
   @Test def testRandom {
-    val actorSystem = ActorSystem("RandomActors")
-    val dispatcher = actorSystem.actorOf(Props[DispatchActor], name = "dispatcher")
-    val s = gracefulStop(dispatcher, 10 seconds)(actorSystem)
-    Await.result(s, 11 seconds)
+//    val actorSystem = ActorSystem("RandomActors")
+//    val dispatcher = actorSystem.actorOf(Props[DispatchActor], name = "dispatcher")
+//    val s = gracefulStop(dispatcher, 10 seconds)(actorSystem)
+//    Await.result(s, 11 seconds)
   }
 
 }

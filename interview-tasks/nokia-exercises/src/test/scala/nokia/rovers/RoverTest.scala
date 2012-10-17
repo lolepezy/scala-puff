@@ -1,7 +1,7 @@
 package nokia.rovers
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 @Test
 class RoverTest {

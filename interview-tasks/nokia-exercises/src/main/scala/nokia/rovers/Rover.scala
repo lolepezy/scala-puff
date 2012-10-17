@@ -118,10 +118,10 @@ object NASAData {
 
     // even lines are initial positions
     var i = 0
-    val initialPositions = roverLines
-      .filter(z => { val k = i % 2; i += 1; k == 0 })
+    val initialPositions = roverLines.zipWithIndex.
+      filter(_._2 % 2 == 0)
       .map(line => {
-        val Array(x, y, d) = line split "\\s" map (_.trim)
+        val Array(x, y, d) = line._1.split("\\s") map (_.trim)
         new Position(x.toInt, y.toInt, d match {
           case "N" => N
           case "S" => S
@@ -132,9 +132,9 @@ object NASAData {
 
     // odd lines are moves  
     i = 0
-    val moves = roverLines
-      .filter(x => { val k = i % 2; i += 1; k == 1 })
-      .map(_.trim.map(_ match {
+    val moves = roverLines.zipWithIndex.
+      filter(_._2 % 2 == 1)
+      .map(_._1.trim.map(_ match {
         case 'L' => Left
         case 'R' => Right
         case 'M' => Forward
