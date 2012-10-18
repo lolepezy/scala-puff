@@ -11,10 +11,10 @@ case class Position(x: Int, y: Int)
 abstract class Robot(var position: Position, var life: Int)
   extends Actor {
 
-  val responseTime: Duration;
-  val initialDelay = 10 milliseconds;
+  val responseTime: Duration
+  val initialDelay = 10 milliseconds
 
-  var schedule: Cancellable;
+  private var schedule: Cancellable = null
 
   /**
    * Schedule periodic execution of "act" method.
