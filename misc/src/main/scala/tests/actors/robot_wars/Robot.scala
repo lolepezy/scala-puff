@@ -8,7 +8,11 @@ import akka.actor.Cancellable
 
 case class Position(x: Int, y: Int)
 
-abstract class Robot(var position: Position, var life: Int)
+/**
+ * Base class for all robots.
+ *
+ */
+abstract class Robot(val id: String, var position: Position, var life: Int)
   extends Actor {
 
   val responseTime: Duration
@@ -49,6 +53,13 @@ abstract class Robot(var position: Position, var life: Int)
       if (life <= 0)
         die
     }
+  }
+
+  /**
+   * Determine if the position p is visible by the robot.
+   */
+  def inSight(p: Position): Boolean = {
+    true
   }
 
 }

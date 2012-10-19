@@ -4,7 +4,10 @@ import akka.util.Duration
 import akka.util.duration._
 import akka.actor.ActorRef
 
-class TankRobot(var pos: Position) extends Robot(pos, 100) {
+class TankRobot(
+  override val id: String,
+  val pos: Position)
+  extends Robot(id, pos, 100) {
 
   val responseTime = 100 milliseconds;
 
