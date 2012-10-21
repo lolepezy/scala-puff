@@ -23,8 +23,6 @@ class Dispatcher(
   val zoneY1: Int) extends Actor {
   /**
    * Robots in the local zone.
-   *
-   * TODO Replace it with Set for faster removals.
    */
   var zoneRobots = Set[(ActorRef, Position)]()
 
@@ -94,9 +92,8 @@ class Dispatcher(
         val cy2 = if (zr._2.y < ym) 1 else 0
         (counts._1 + cx1, counts._2 + cx2, counts._3 + cy1, counts._4 + cy2)
       })
-
-    val useXtoSplit = (math.abs(xc1 - xc2) < math.abs(yc1 - yc2))
-    val (d1, d2, (zr1, zr2)) = if (useXtoSplit) {
+      
+    val (d1, d2, (zr1, zr2)) = if (math.abs(xc1 - xc2) < math.abs(yc1 - yc2)) {
       // split zone by X, i.e. create two children dispatchers
       // in two adjacent zones
       (new Dispatcher(zoneX0, xm, zoneY0, zoneY1),
