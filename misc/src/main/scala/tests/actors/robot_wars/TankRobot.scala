@@ -6,8 +6,9 @@ import akka.actor.ActorRef
 
 class TankRobot(
   override val id: String,
+  override val side: String,
   val pos: Position)
-  extends Robot(id, pos, 100) {
+  extends Robot(id, side, pos, 100) {
 
   val responseTime = 100 milliseconds;
 

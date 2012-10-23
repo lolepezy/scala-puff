@@ -62,7 +62,7 @@ class Dispatcher(
           createChildDispatchers
 
       } else
-        children.foreach(_ ! np)
+        children.foreach(_ forward np)
     }
     case _ => {
       // log problem here
@@ -92,7 +92,7 @@ class Dispatcher(
         val cy2 = if (zr._2.y < ym) 1 else 0
         (counts._1 + cx1, counts._2 + cx2, counts._3 + cy1, counts._4 + cy2)
       })
-      
+
     val (d1, d2, (zr1, zr2)) = if (math.abs(xc1 - xc2) < math.abs(yc1 - yc2)) {
       // split zone by X, i.e. create two children dispatchers
       // in two adjacent zones
