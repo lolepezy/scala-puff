@@ -42,9 +42,10 @@ class Dispatcher(
   private val maxZoneRobotsNumber = 100;
 
   def receive = {
-    case np @ NewPostion(p, robot) => {
+    case np @ RobotPosition(RobotId(id, side), robot, p) => {
       if (children.isEmpty) {
-        // there's no children dispatchers, so we'll notify robots ourselves
+        // there's no children dispatchers, so we'll 
+        // notify robots in zone ourselves
         zoneRobots.foreach(zr => if (closePositions(zr._2, p) && zr._2 != robot) zr._1 ! np)
 
         // if robot came to the zone, add him to the local 
@@ -89,7 +90,7 @@ class Dispatcher(
         val cx1 = if (zr._2.x < xm) 1 else 0
         val cx2 = if (zr._2.x >= xm) 1 else 0
         val cy1 = if (zr._2.y < ym) 1 else 0
-        val cy2 = if (zr._2.y < ym) 1 else 0
+        val cy2 = if (zr._2.y >= ym) 1 else 0
         (counts._1 + cx1, counts._2 + cx2, counts._3 + cy1, counts._4 + cy2)
       })
 

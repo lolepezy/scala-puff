@@ -11,6 +11,7 @@ class TankRobot(
   extends Robot(id, side, pos, 100) {
 
   val responseTime = 100 milliseconds;
+  val sightDistance = 10;
 
   def act {
     // find some enemies in the nearest positions

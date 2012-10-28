@@ -6,4 +6,6 @@ case class Shoot
 case class Start
 case class Damage(quality: Int)
 
-case class NewPostion(position : Position, robot : ActorRef)
+case class RobotId(id: String, side: String)
+
+case class RobotPosition(robotId: RobotId, robot: ActorRef, position: Position)

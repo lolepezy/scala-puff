@@ -10,12 +10,7 @@ import akka.util.duration.intToDurationInt
 
 case class Position(x: Int, y: Int)
 
-/**
- * Base class for all robots.
- *
- */
-abstract class Robot(
-  val id: String,
+abstract class Robot(val id: String,
   // the side of the conflict
   val side: String,
   var position: Position,
@@ -24,34 +19,22 @@ abstract class Robot(
 
   val responseTime: Duration
   val initialDelay = 10 milliseconds
-
-  private var schedule: Cancellable = null
+  val sightDistance: Int;
 
   /**
    * Robots in sight of the given one.
    */
-  private var neighbors = Set[ActorRef]();
+  private var neighbors = Set[(ActorRef, Position)]();
+
+  private var schedule: Cancellable = null
 
   /**
    * Schedule periodic execution of "act" method.
    */
   override def preStart = {
-    schedule = context.system.scheduler.schedule(initialDelay, responseTime)(this.act)
+    schedule = context.system.scheduler.schedule(initialDelay, responseTime)(Robot.this.act)
   }
 
-  def damage(d : Int) {
-    
-  }
-  
-  /**
-   * Die and stop waking up for acting
-   */
-  def die {
-    self ! PoisonPill
-    schedule.cancel
-  }
-
-  
   /**
    * It must do something every responseTime time interval.
    * Do some real actions (search, attack, move, etc.)
@@ -65,21 +48,38 @@ abstract class Robot(
     case Start => {
       // start doing something
     }
-    case Damage(q) => {
-      life -= q
-      if (life <= 0)
-        die
+    case Damage(q) => damage(q)
+    case RobotPosition(RobotId(id, side), robot, p) => {
     }
-    case NewPostion(p, r) => {
+  }
 
+  def die {
+    self ! PoisonPill
+    schedule.cancel
+  }
+
+  /**
+   * It cannot be overridden
+   */
+  private[robot_wars] final def damage(damage: Int) {
+    life -= damage
+    if (life < 0) {
+      die
     }
+  }
+
+  /**
+   *
+   */
+  final def newPosition(r: ActorRef, p: Position) {
+    neighbors += ((r, p))
   }
 
   /**
    * Determine if the position p is visible by the robot.
    */
-  def inSight(p: Position): Boolean = {
-    true
-  }
+  def inSight(p: Position): Boolean =
+    math.abs(position.x - p.x) < sightDistance &&
+      math.abs(position.y - p.y) < sightDistance
 
 }
