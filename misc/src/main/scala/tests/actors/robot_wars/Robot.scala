@@ -8,13 +8,33 @@ import akka.actor.actorRef2Scala
 import akka.util.Duration
 import akka.util.duration.intToDurationInt
 
+/**
+ * The basic position class.
+ *
+ * TODO Implement
+ *
+ */
 case class Position(x: Int, y: Int)
 
+/**
+ * Base class for all robot actors. Defines basic functionality
+ * for message interchanging and move/attack/die cycle. Some of the
+ * methods like, damage, die or move cannot be overridden.
+ *
+ * The concept of time is implemented as periodical call for "act" method,
+ * where robot is free to do anything. Any interaction with other robots
+ * is done by sending them corresponding messages.
+ *
+ * Every robots move is followed by RobotPosition message sent to
+ * local zone dispatcher.
+ *
+ */
 abstract class Robot(val id: String,
   // the side of the conflict
   val side: String,
   var position: Position,
-  var life: Int)
+  var life: Int,
+  var positionDispatcher: ActorRef)
   extends Actor {
 
   val responseTime: Duration
@@ -24,7 +44,7 @@ abstract class Robot(val id: String,
   /**
    * Robots in sight of the given one.
    */
-  private var neighbors = Set[(ActorRef, Position)]();
+  protected var neighbors = Set[(Position, RobotId, ActorRef)]();
 
   private var schedule: Cancellable = null
 
@@ -42,20 +62,40 @@ abstract class Robot(val id: String,
   def act
 
   /**
-   * Receive messages from other robots.
+   * Move to new position according to some internal decision.
    */
-  def receive = {
-    case Start => {
-      // start doing something
-    }
-    case Damage(q) => damage(q)
-    case RobotPosition(RobotId(id, side), robot, p) => {
-    }
+  def makeNextMove: Position
+
+  /**
+   * Do nothing by default.
+   */
+  def customMessage(m: AnyMessage): Receive = {
+    case _ =>
   }
 
-  def die {
+  /**
+   * Receive messages from other robots and dispatchers.
+   */
+  def receive = {
+    case Damage(q) =>
+      damage(q)
+    case RobotPosition(rid @ RobotId(id, side), robot, p) =>
+      neighbors += ((p, rid, robot))
+    case NewDispatcher(pd) =>
+      positionDispatcher = pd
+    case CustomMessage(m) =>
+      customMessage(m)
+  }
+
+  private[robot_wars] final def die {
     self ! PoisonPill
     schedule.cancel
+  }
+
+  private[robot_wars] final def move = {
+    val newPosition = makeNextMove
+    position = newPosition
+    positionDispatcher ! RobotPosition(RobotId(id, side), self, newPosition)
   }
 
   /**
@@ -69,16 +109,9 @@ abstract class Robot(val id: String,
   }
 
   /**
-   *
-   */
-  final def newPosition(r: ActorRef, p: Position) {
-    neighbors += ((r, p))
-  }
-
-  /**
    * Determine if the position p is visible by the robot.
    */
-  def inSight(p: Position): Boolean =
+  private[robot_wars] final def inSight(p: Position): Boolean =
     math.abs(position.x - p.x) < sightDistance &&
       math.abs(position.y - p.y) < sightDistance
 

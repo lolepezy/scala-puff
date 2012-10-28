@@ -73,7 +73,10 @@ class Dispatcher(
   /**
    * Used only for dividing zone into two zones.
    */
-  private def setZoneRobots(robots: Set[(ActorRef, Position)]) = zoneRobots = robots
+  private def setZoneRobots(robots: Set[(ActorRef, Position)]) = {
+    zoneRobots = robots
+    zoneRobots.foreach(_._1 ! NewDispatcher(self))
+  }
 
   private def closePositions(p1: Position, p2: Position) =
     (math.abs(p1.x - p2.x) <= maxPossibleSight
