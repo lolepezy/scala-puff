@@ -4,9 +4,15 @@ import akka.actor.ActorRef
 
 case class Shoot
 case class Start
+
+// make a damage to a robot
 case class Damage(quality: Int)
 
+// All custom messages must be inherited from this one to be processed.
 case class AnyMessage
+
+// Periodically self-sent message forcing robot to do something. 
+case class Act
 
 /**
  *

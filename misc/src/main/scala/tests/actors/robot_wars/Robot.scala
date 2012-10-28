@@ -17,6 +17,14 @@ import akka.util.duration.intToDurationInt
 case class Position(x: Int, y: Int)
 
 /**
+ * Auxiliary structure to unify typical usage of robots in messages, etc.
+ */
+case class RobotInfo(
+  val position: Position,
+  val robotId: RobotId,
+  val actor: ActorRef)
+
+/**
  * Base class for all robot actors. Defines basic functionality
  * for message interchanging and move/attack/die cycle. Some of the
  * methods like, damage, die or move cannot be overridden.
@@ -44,15 +52,20 @@ abstract class Robot(val id: String,
   /**
    * Robots in sight of the given one.
    */
-  protected var neighbors = Set[(Position, RobotId, ActorRef)]();
+  protected var neighbors = Set[RobotInfo]();
 
   private var schedule: Cancellable = null
 
   /**
    * Schedule periodic execution of "act" method.
+   * We don't call it directly from here to avoid
+   * race conditions but instead send the message Act
+   * to robot itself.
    */
   override def preStart = {
-    schedule = context.system.scheduler.schedule(initialDelay, responseTime)(Robot.this.act)
+    schedule = context.system.scheduler.schedule(initialDelay, responseTime)({
+      self ! Act
+    })
   }
 
   /**
@@ -77,12 +90,15 @@ abstract class Robot(val id: String,
    * Receive messages from other robots and dispatchers.
    */
   def receive = {
-    case Damage(q) =>
-      damage(q)
-    case RobotPosition(rid @ RobotId(id, side), robot, p) =>
-      neighbors += ((p, rid, robot))
-    case NewDispatcher(pd) =>
-      positionDispatcher = pd
+    case Act => act
+    case Damage(q) => damage(q)
+    case RobotPosition(rid @ RobotId(id, side), robot, p) => {
+      if (inSight(p))
+        neighbors += RobotInfo(p, rid, robot)
+      else
+        neighbors -= RobotInfo(p, rid, robot)
+    }
+    case NewDispatcher(pd) => positionDispatcher = pd
     case CustomMessage(m) =>
       customMessage(m)
   }
@@ -114,5 +130,10 @@ abstract class Robot(val id: String,
   private[robot_wars] final def inSight(p: Position): Boolean =
     math.abs(position.x - p.x) < sightDistance &&
       math.abs(position.y - p.y) < sightDistance
+
+  /**
+   * Filter out only enemies from all neighbors.
+   */
+  protected def enemies = neighbors.filter(_.robotId.side != side)
 
 }

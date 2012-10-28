@@ -21,10 +21,11 @@ class Dispatcher(
   val zoneX1: Int,
   val zoneY0: Int,
   val zoneY1: Int) extends Actor {
+
   /**
    * Robots in the local zone.
    */
-  var zoneRobots = Set[(ActorRef, Position)]()
+  var zoneRobots = Set[RobotInfo]()
 
   /**
    * Children dispatchers (if exist).
@@ -42,19 +43,20 @@ class Dispatcher(
   private val maxZoneRobotsNumber = 100;
 
   def receive = {
-    case np @ RobotPosition(RobotId(id, side), robot, p) => {
+    case np @ RobotPosition(rid @ RobotId(id, side), robot, p) => {
       if (children.isEmpty) {
         // there's no children dispatchers, so we'll 
         // notify robots in zone ourselves
-        zoneRobots.foreach(zr => if (closePositions(zr._2, p) && zr._2 != robot) zr._1 ! np)
+        zoneRobots.foreach(zr =>
+          if (closePositions(zr.position, p) && zr.robotId.id != id) zr.actor ! np)
 
         // if robot came to the zone, add him to the local 
         // list, if it's out of the zone --- remove it
         zoneRobots = if (zoneX0 <= p.x && p.x < zoneX1 &&
           zoneY0 <= p.y && p.y < zoneY1)
-          zoneRobots + ((robot, p))
+          zoneRobots + RobotInfo(p, rid, robot)
         else
-          zoneRobots - ((robot, p))
+          zoneRobots - RobotInfo(p, rid, robot)
 
         // if there's too much robots we must create descendant dispatchers 
         // and re-send the message to them
@@ -73,9 +75,9 @@ class Dispatcher(
   /**
    * Used only for dividing zone into two zones.
    */
-  private def setZoneRobots(robots: Set[(ActorRef, Position)]) = {
+  private def setZoneRobots(robots: Set[RobotInfo]) = {
     zoneRobots = robots
-    zoneRobots.foreach(_._1 ! NewDispatcher(self))
+    zoneRobots.foreach(_.actor ! NewDispatcher(self))
   }
 
   private def closePositions(p1: Position, p2: Position) =
@@ -90,10 +92,10 @@ class Dispatcher(
     val ym = (zoneY0 + zoneY1) / 2
     val (xc1, xc2, yc1, yc2) = zoneRobots.foldLeft((0, 0, 0, 0))(
       (counts, zr) => {
-        val cx1 = if (zr._2.x < xm) 1 else 0
-        val cx2 = if (zr._2.x >= xm) 1 else 0
-        val cy1 = if (zr._2.y < ym) 1 else 0
-        val cy2 = if (zr._2.y >= ym) 1 else 0
+        val cx1 = if (zr.position.x < xm) 1 else 0
+        val cx2 = if (zr.position.x >= xm) 1 else 0
+        val cy1 = if (zr.position.y < ym) 1 else 0
+        val cy2 = if (zr.position.y >= ym) 1 else 0
         (counts._1 + cx1, counts._2 + cx2, counts._3 + cy1, counts._4 + cy2)
       })
 
@@ -102,18 +104,18 @@ class Dispatcher(
       // in two adjacent zones
       (new Dispatcher(zoneX0, xm, zoneY0, zoneY1),
         new Dispatcher(xm, zoneX1, zoneY0, zoneY1),
-        zoneRobots partition (_._2.x < xm))
+        zoneRobots partition (_.position.x < xm))
     } else {
       // split zone by Y
       (new Dispatcher(zoneX0, zoneX1, zoneY0, ym),
         new Dispatcher(zoneX0, zoneX1, ym, zoneY1),
-        zoneRobots partition (_._2.y < ym))
+        zoneRobots partition (_.position.y < ym))
     }
 
     d1.setZoneRobots(zr1)
     d2.setZoneRobots(zr2)
     children = List(context.system.actorOf(Props(d1)), context.system.actorOf(Props(d2)))
-    zoneRobots = Set[(ActorRef, Position)]()
+    zoneRobots = Set[RobotInfo]()
   }
 
 }
