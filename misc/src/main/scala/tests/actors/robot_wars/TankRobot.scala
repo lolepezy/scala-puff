@@ -5,6 +5,9 @@ import akka.util.duration._
 import akka.actor.ActorRef
 import scala.util.Random
 
+/**
+ * Tank is slow and making big damage by shells.
+ */
 class TankRobot(
   override val id: String,
   override val side: String,
@@ -59,8 +62,17 @@ class TankRobot(
       // that were already been
       getNextPost
     } else {
-      // go where there're move enemies
-      getNextPost
+      // TODO Make it more intellectual
+      // go where there're more enemies
+      val (x0, x1, y0, y1) = enemiesToAttack.foldLeft((0, 0, 0, 0))(
+        (counts, enemy) => (
+          if (enemy.position.x < position.x) counts._1 + 1 else counts._1,
+          if (enemy.position.x > position.x) counts._2 + 1 else counts._2,
+          if (enemy.position.y < position.y) counts._3 + 1 else counts._3,
+          if (enemy.position.y > position.y) counts._4 + 1 else counts._4))
+      val xhop = if (x0 > x1) -hop else hop
+      val yhop = if (y0 > y1) -hop else hop
+      Position(position.x + xhop, position.y + yhop)
     }
   }
 
