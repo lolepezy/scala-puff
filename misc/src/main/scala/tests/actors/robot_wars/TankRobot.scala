@@ -16,7 +16,7 @@ class TankRobot(
   extends Robot(id, side, pos, 100, dispatcher) {
 
   // initial characteristics
-  val responseTime = 100 milliseconds
+  val responseTime = 1000 milliseconds
   val sightDistance = 10
   val shell = Damage(20)
 
@@ -29,19 +29,23 @@ class TankRobot(
   private val random = new Random()
 
   def act {
+    println("act, id = " + id)
     enemiesToAttack = enemies
     // attack with a shell
-    enemiesToAttack.head.actor ! shell
 
+    log.debug("enemiesToAttack = {}", enemiesToAttack)
+    
     if (enemiesToAttack.isEmpty) {
       // no enemies here, move somewhere to finds ones
       move
-    }
-
-    // no need to move in case there's still enemies
-    if (enemiesToAttack.tail.isEmpty) {
-      // there's no more enemies
-      move
+    } else {
+      // attack one of them
+      enemiesToAttack.head.actor ! shell
+      // no need to move in case there's still enemies
+      if (enemiesToAttack.tail.isEmpty) {
+        // there's no more enemies
+        move
+      }
     }
   }
 
@@ -50,7 +54,7 @@ class TankRobot(
       val nextPosition = Position(
         position.x + (if (random.nextBoolean()) hop else -hop),
         position.y + (if (random.nextBoolean()) hop else -hop))
-      if (track.exists(_ == nextPosition)) {
+      if (!track.exists(_ == nextPosition)) {
         track = track :+ (nextPosition)
         nextPosition
       } else

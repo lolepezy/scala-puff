@@ -7,6 +7,8 @@ import akka.actor.PoisonPill
 import akka.actor.actorRef2Scala
 import akka.util.Duration
 import akka.util.duration.intToDurationInt
+import akka.event.Logging
+import akka.actor.ActorLogging
 
 /**
  * The basic position class.
@@ -43,7 +45,7 @@ abstract class Robot(val id: String,
   var position: Position,
   var life: Int,
   var positionDispatcher: ActorRef)
-  extends Actor {
+  extends Actor with ActorLogging {
 
   val responseTime: Duration
   val initialDelay = 10 milliseconds
@@ -66,6 +68,9 @@ abstract class Robot(val id: String,
     schedule = context.system.scheduler.schedule(initialDelay, responseTime)({
       self ! Act
     })
+    // send initial position to the dispatcher 
+    positionDispatcher ! RobotPosition(RobotId(id, side), self, position)
+    log.debug("Starting robot " + id);
   }
 
   /**
@@ -86,26 +91,34 @@ abstract class Robot(val id: String,
     case _ =>
   }
 
+  def logged(message: Any)(f: Receive): Unit = {
+    log.debug("id= " + id + " message = " + message)
+    f(message)
+  }
+
   /**
    * Receive messages from other robots and dispatchers.
    */
   def receive = {
-    case Act => act
-    case Damage(q) => damage(q)
-    case RobotPosition(rid @ RobotId(id, side), robot, p) => {
-      if (inSight(p))
-        neighbors += RobotInfo(p, rid, robot)
-      else
-        neighbors -= RobotInfo(p, rid, robot)
+    case m @ _ => logged(m) {
+      case Act => act
+      case Damage(q) => damage(q)
+      case RobotPosition(rid @ RobotId(id, side), robot, p) => {
+        if (inSight(p))
+          neighbors += RobotInfo(p, rid, robot)
+        else
+          neighbors -= RobotInfo(p, rid, robot)
+      }
+      case NewDispatcher(pd) => positionDispatcher = pd
+      case CustomMessage(m) =>
+        customMessage(m)
     }
-    case NewDispatcher(pd) => positionDispatcher = pd
-    case CustomMessage(m) =>
-      customMessage(m)
   }
 
   private[robot_wars] final def die {
     self ! PoisonPill
     schedule.cancel
+    log.debug("Robot id=" + id + " is now dead")
   }
 
   private[robot_wars] final def move = {
