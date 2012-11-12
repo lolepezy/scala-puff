@@ -76,18 +76,22 @@ abstract class Robot(val id: String,
   /**
    * It must do something every responseTime time interval.
    * Do some real actions (search, attack, move, etc.)
+   *
+   * TODO Think of restricting maximal damage that can be done
+   * in one "act" call. Otherwise it's easy to create a robot,
+   * killing anyone in one action.
    */
-  def act
+  protected def act
 
   /**
    * Move to new position according to some internal decision.
    */
-  def makeNextMove: Position
+  protected def makeNextMove: Position
 
   /**
    * Do nothing by default.
    */
-  def customMessage(m: AnyMessage): Receive = {
+  protected def customMessage(m: AnyMessage): Receive = {
     case _ =>
   }
 
@@ -109,15 +113,17 @@ abstract class Robot(val id: String,
         else
           neighbors -= RobotInfo(p, rid, robot)
       }
+      case Dead(robotId, position) =>
+        neighbors = neighbors.filterNot(_.robotId == robotId)
       case NewDispatcher(pd) => positionDispatcher = pd
-      case CustomMessage(m) =>
-        customMessage(m)
+      case CustomMessage(m) => customMessage(m)
     }
   }
 
   private[robot_wars] final def die {
     self ! PoisonPill
     schedule.cancel
+    positionDispatcher ! Dead(RobotId(id, side), position)
     log.debug("Robot id=" + id + " is now dead")
   }
 

@@ -4,6 +4,7 @@ import akka.util.Duration
 import akka.util.duration._
 import akka.actor.ActorRef
 import scala.util.Random
+import scala.annotation.tailrec
 
 /**
  * Tank is slow and making big damage by shells.
@@ -16,7 +17,7 @@ class TankRobot(
   extends Robot(id, side, pos, 100, dispatcher) {
 
   // initial characteristics
-  val responseTime = 1000 milliseconds
+  val responseTime = 100 milliseconds
   val sightDistance = 10
   val shell = Damage(20)
 
@@ -50,6 +51,7 @@ class TankRobot(
   }
 
   def makeNextMove = {
+    @tailrec
     def getNextPost: Position = {
       val nextPosition = Position(
         position.x + (if (random.nextBoolean()) hop else -hop),

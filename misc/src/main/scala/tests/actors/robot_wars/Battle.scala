@@ -18,10 +18,10 @@ object Battle extends App {
   val system = ActorSystem("Battle")
   val dispatcher = system.actorOf(Props(new Dispatcher(-100, 100, -100, 100)), name = "MainDispatcher")
 
-  val tanks1 = generateTanks("side1", 1)
-  val tanks2 = generateTanks("side2", 1)
+  val tanks1 = generateTanks("side1", 5)
+  val tanks2 = generateTanks("side2", 5)
 
-  Thread.sleep(10000)
+  Thread.sleep(100000)
   system.shutdown
 
 }

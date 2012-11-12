@@ -67,6 +67,12 @@ class Dispatcher(
       } else
         children.foreach(_ forward np)
     }
+    case dead @ Dead(robotId, position) => {
+      // remove it from the local zone
+      // TODO Implement it in more effective fashion
+      zoneRobots = zoneRobots.filterNot(r => r.robotId == robotId)
+      zoneRobots.foreach(_.actor forward dead)
+    }
     case _ => {
       // log problem here
     }
@@ -100,7 +106,7 @@ class Dispatcher(
       })
 
     val (d1, d2, (zr1, zr2)) = if (math.abs(xc1 - xc2) < math.abs(yc1 - yc2)) {
-      // split zone by X, i.e. create two children dispatchers
+      // split zone by X, i.e. create two child dispatchers
       // in two adjacent zones
       (new Dispatcher(zoneX0, xm, zoneY0, zoneY1),
         new Dispatcher(xm, zoneX1, zoneY0, zoneY1),

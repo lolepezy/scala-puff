@@ -2,8 +2,12 @@ package tests.actors.robot_wars
 
 import akka.actor.ActorRef
 
-case class Shoot
 case class Start
+
+/**
+ * Message for a dispatcher that robot is dead.
+ */
+case class Dead(robotId: RobotId, position: Position)
 
 // make a damage to a robot
 case class Damage(quality: Int)
