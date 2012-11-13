@@ -22,7 +22,7 @@ class TankRobot(
   val shell = Damage(20)
 
   // the maximal distance at which it can move at a time
-  val hop = 1
+  val maxHop = 5
 
   private var enemiesToAttack = Set[RobotInfo]()
   private var track = Vector[Position]()
@@ -53,6 +53,7 @@ class TankRobot(
   def makeNextMove = {
     @tailrec
     def getNextPost: Position = {
+      val hop = random.nextInt(maxHop + 1)
       val nextPosition = Position(
         position.x + (if (random.nextBoolean()) hop else -hop),
         position.y + (if (random.nextBoolean()) hop else -hop))
@@ -76,8 +77,8 @@ class TankRobot(
           if (enemy.position.x > position.x) counts._2 + 1 else counts._2,
           if (enemy.position.y < position.y) counts._3 + 1 else counts._3,
           if (enemy.position.y > position.y) counts._4 + 1 else counts._4))
-      val xhop = if (x0 > x1) -hop else hop
-      val yhop = if (y0 > y1) -hop else hop
+      val xhop = if (x0 > x1) -maxHop else maxHop
+      val yhop = if (y0 > y1) -maxHop else maxHop
       Position(position.x + xhop, position.y + yhop)
     }
   }
