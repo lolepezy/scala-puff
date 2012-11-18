@@ -10,7 +10,7 @@ case class Start
 case class Dead(robotId: RobotId, position: Position)
 
 // make a damage to a robot
-case class Damage(quality: Int)
+case class Damage(from: RobotId, to: RobotId, quality: Int)
 
 // All custom messages must be inherited from this one to be processed.
 case class AnyMessage

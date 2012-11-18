@@ -19,7 +19,7 @@ class TankRobot(
   // initial characteristics
   val responseTime = 100 milliseconds
   val sightDistance = 10
-  val shell = Damage(20)
+  def shell(from : RobotId, to : RobotId) = Damage(from, to, 20)
 
   // the maximal distance at which it can move at a time
   val maxHop = 5
@@ -41,7 +41,7 @@ class TankRobot(
       move
     } else {
       // attack one of them
-      enemiesToAttack.head.actor ! shell
+      enemiesToAttack.head.actor ! shell(myId, enemiesToAttack.head.robotId)
       // no need to move in case there's still enemies
       if (enemiesToAttack.tail.isEmpty) {
         // there's no more enemies

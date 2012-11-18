@@ -106,7 +106,7 @@ abstract class Robot(val id: String,
   def receive = {
     case m @ _ => logged(m) {
       case Act => act
-      case Damage(q) => damage(q)
+      case Damage(f, t, q) => damage(q)
       case RobotPosition(rid @ RobotId(id, side), robot, p) => {
         if (inSight(p))
           neighbors += RobotInfo(p, rid, robot)
@@ -153,6 +153,8 @@ abstract class Robot(val id: String,
   /**
    * Filter out only enemies from all neighbors.
    */
-  protected def enemies = neighbors.filter(_.robotId.side != side)
+  protected final def enemies = neighbors.filter(_.robotId.side != side)
+  
+  protected final def myId = RobotId(id, side)
 
 }
