@@ -21,22 +21,27 @@ class Tracker(val logPath: String) extends Actor {
   }
 
   override def postStop = {
+    logWriter.flush();
     logWriter.close();
   }
 
   override def receive = {
     case RobotPosition(robotId, _, position) => {
-      logWriter.write("move " + robotId + " " + position.x + " " + position.y)
+      write("move " + robotId + " " + position.x + " " + position.y)
     }
     case Damage(from, to, d) => {
-      logWriter.write("damage " + from.id + " " + to.id + " " + d)
+      write("damage " + from.id + " " + to.id + " " + d)
     }
     case Dead(robotId, position) => {
-      logWriter.write("dead " + robotId.id + " " + position.x + " " + position.y)
+      write("dead " + robotId.id + " " + position.x + " " + position.y)
     }
     case x @ _ => {
       // whatever
-      logWriter.write("unknown " + x)
+      write("unknown " + x)
     }
+  }
+
+  private def write(a: String) = {
+    logWriter.write(a + "\n")
   }
 }

@@ -13,13 +13,14 @@ class TankRobot(
   override val id: String,
   override val side: String,
   val pos: Position,
-  dispatcher: ActorRef)
-  extends Robot(id, side, pos, 100, dispatcher) {
+  dispatcher: ActorRef,
+  tracker: ActorRef)
+  extends Robot(id, side, pos, 100, dispatcher, tracker) {
 
   // initial characteristics
   val responseTime = 100 milliseconds
   val sightDistance = 10
-  def shell(from : RobotId, to : RobotId) = Damage(from, to, 20)
+  def shell(from: RobotId, to: RobotId) = Damage(from, to, 20)
 
   // the maximal distance at which it can move at a time
   val maxHop = 5
@@ -35,7 +36,7 @@ class TankRobot(
     // attack with a shell
 
     log.debug("enemiesToAttack = {}", enemiesToAttack)
-    
+
     if (enemiesToAttack.isEmpty) {
       // no enemies here, move somewhere to finds ones
       move

@@ -12,9 +12,6 @@ import akka.actor.ActorLogging
 
 /**
  * The basic position class.
- *
- * TODO Implement
- *
  */
 case class Position(x: Int, y: Int)
 
@@ -44,7 +41,8 @@ abstract class Robot(val id: String,
   val side: String,
   var position: Position,
   var life: Int,
-  var positionDispatcher: ActorRef)
+  var positionDispatcher: ActorRef,
+  val tracker: ActorRef)
   extends Actor with ActorLogging {
 
   val responseTime: Duration
@@ -123,23 +121,27 @@ abstract class Robot(val id: String,
   private[robot_wars] final def die {
     self ! PoisonPill
     schedule.cancel
-    positionDispatcher ! Dead(RobotId(id, side), position)
+    bcast(Dead(RobotId(id, side), position))
     log.debug("Robot id=" + id + " is now dead")
   }
 
   private[robot_wars] final def move = {
     val newPosition = makeNextMove
     position = newPosition
-    positionDispatcher ! RobotPosition(RobotId(id, side), self, newPosition)
+    bcast(RobotPosition(RobotId(id, side), self, newPosition))
   }
 
   /**
    * It cannot be overridden
    */
   private[robot_wars] final def damage(damage: Int) {
-    life -= damage
     if (life < 0) {
-      die
+      // it's already dead, so do nothing
+    } else {
+      life -= damage
+      if (life < 0) {
+        die
+      }
     }
   }
 
@@ -151,10 +153,18 @@ abstract class Robot(val id: String,
       math.abs(position.y - p.y) < sightDistance
 
   /**
+   * Send the message both to tracker and dispatcher.
+   */
+  private[this] def bcast(p: RobotMessage) = {
+    positionDispatcher ! p
+    tracker ! p
+  }
+
+  /**
    * Filter out only enemies from all neighbors.
    */
   protected final def enemies = neighbors.filter(_.robotId.side != side)
-  
+
   protected final def myId = RobotId(id, side)
 
 }

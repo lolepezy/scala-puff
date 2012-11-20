@@ -11,17 +11,18 @@ object Battle extends App {
       // TODO Generate some random positions or spawn all 
       // robots from the same place (like base or something)
       val pos = Position(t, t)
-      system.actorOf(Props(new TankRobot(id, side, pos, dispatcher)), name = "Tank" +  side + t)
+      system.actorOf(Props(new TankRobot(id, side, pos, dispatcher, tracker)), name = "Tank" + side + t)
     }).toList
   }
 
   val system = ActorSystem("Battle")
   val dispatcher = system.actorOf(Props(new Dispatcher(-100, 100, -100, 100)), name = "MainDispatcher")
+  val tracker = system.actorOf(Props(new Tracker("./battle_track.log")), name = "MainTracker")
 
   val tanks1 = generateTanks("side1", 5)
   val tanks2 = generateTanks("side2", 5)
 
-  Thread.sleep(100000)
+  Thread.sleep(60000)
   system.shutdown
 
 }
