@@ -14,3 +14,7 @@ project/plugins/project/
 .settings
 .project
 .classpath
+
+# other stuff
+.cache
+
