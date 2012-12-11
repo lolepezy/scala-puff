@@ -4,15 +4,15 @@ package net.projecteuler.lolepezy
  * Represents big integer
  *
  */
-class HugeInteger(val i: Int) {
+class BigInt(val i: Int) {
 
   private val digits = List[Byte]()
 
   def this() = this(0)
 
-  def *(hi: HugeInteger) = {
+  def *(hi: BigInt) = {
     
   }
 
-  implicit def int2hugeInt(i: Int): HugeInteger = new HugeInteger(i)
+  implicit def int2hugeInt(i: Int): BigInt = new BigInt(i)
 }
