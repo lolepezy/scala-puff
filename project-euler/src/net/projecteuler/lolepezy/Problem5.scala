@@ -1,12 +1,17 @@
 package net.projecteuler.lolepezy
 
 import org.junit.Test
+import scala.annotation.tailrec
 
 class Problem5 {
 
   def pow(v: Long, p: Int): Long = {
-    if (p == 1) v
-    else v * pow(v, p - 1)
+    @tailrec
+    def pow1(v: Long, p: Int, value: Long): Long = {
+      if (p == 0) value
+      else pow1(v, p - 1, value * v)
+    }
+    pow1(v, p, 1)
   }
 
   @Test
