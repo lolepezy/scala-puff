@@ -24,8 +24,8 @@ object Math {
         x * x * v
       }
     }
-    
-//    v.pow(p)
+
+    //    v.pow(p)
   }
 
   def !(n: BigInt): BigInt = {
@@ -48,6 +48,22 @@ object Math {
     case '7' => 7
     case '8' => 8
     case '9' => 9
+  }
+
+  /**
+   * Pre-computed digit factorials
+   */
+  def digFact: Int => Int = {
+    case 0 => 1
+    case 1 => 1
+    case 2 => 2
+    case 3 => 2 * 3
+    case 4 => 2 * 3 * 4
+    case 5 => 2 * 3 * 4 * 5
+    case 6 => 2 * 3 * 4 * 5 * 6
+    case 7 => 2 * 3 * 4 * 5 * 6 * 7
+    case 8 => 2 * 3 * 4 * 5 * 6 * 7 * 8
+    case 9 => 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9
   }
 
 }
