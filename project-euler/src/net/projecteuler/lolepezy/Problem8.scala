@@ -28,15 +28,13 @@ class Problem8 {
   @Test
   def solve() {
 
-    def asInt(c: Char): Int = c.toString.toInt
-
     val a = number.trim.replaceAll("\\D", "").toCharArray
     val x = (for (i <- (0 to a.length - 5)) yield {
-      val a0: Int = asInt(a(i))
-      val a1: Int = asInt(a(i + 1))
-      val a2: Int = asInt(a(i + 2))
-      val a3: Int = asInt(a(i + 3))
-      val a4: Int = asInt(a(i + 4))
+      val a0: Int = Math.digit(a(i))
+      val a1: Int = Math.digit(a(i + 1))
+      val a2: Int = Math.digit(a(i + 2))
+      val a3: Int = Math.digit(a(i + 3))
+      val a4: Int = Math.digit(a(i + 4))
 //      println(a0 + " , " + a1 + " , " + a2 + " , " + a3 + " , " + a4 + " = " + a0 * a1 * a2 * a3 * a4)
       a0 * a1 * a2 * a3 * a4
     }).toList.max
