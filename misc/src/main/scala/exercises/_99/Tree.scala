@@ -1,4 +1,4 @@
-package tests.problems
+package exercises._99
 
 sealed abstract class Node[+A] {}
 

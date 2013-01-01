@@ -1,4 +1,4 @@
-package tests.actors.robot_wars
+package robot_wars
 
 import akka.actor.ActorRef
 

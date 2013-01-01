@@ -1,4 +1,4 @@
-package tests.actors.robot_wars
+package robot_wars
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -7,8 +7,17 @@ import akka.actor.PoisonPill
 import akka.actor.actorRef2Scala
 import akka.util.Duration
 import akka.util.duration.intToDurationInt
-import akka.event.Logging
 import akka.actor.ActorLogging
+import akka.util.Duration
+import robot_wars.RobotPosition
+import robot_wars.RobotMessage
+import robot_wars.RobotId
+import robot_wars.NewDispatcher
+import robot_wars.Dead
+import robot_wars.Damage
+import robot_wars.CustomMessage
+import robot_wars.AnyMessage
+import robot_wars.Act
 
 /**
  * The basic position class.

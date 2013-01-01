@@ -1,10 +1,10 @@
-package tests.actors.robot_wars
+package robot_wars
 
-import akka.util.Duration
 import akka.util.duration._
 import akka.actor.ActorRef
 import scala.util.Random
 import scala.annotation.tailrec
+import akka.actor.actorRef2Scala
 
 /**
  * Tank is slow and making big damage by shells.

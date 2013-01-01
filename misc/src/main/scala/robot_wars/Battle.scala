@@ -1,4 +1,4 @@
-package tests.actors.robot_wars
+package robot_wars
 
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -19,7 +19,7 @@ object Battle extends App {
   val dispatcher = system.actorOf(Props(new Dispatcher(-100, 100, -100, 100)), name = "MainDispatcher")
   val tracker = system.actorOf(Props(new Tracker("./battle_track.log")), name = "MainTracker")
 
-  val tanks1 = generateTanks("side1", 5)
+  val tanks1 = generateTanks("side1", 20)
   val tanks2 = generateTanks("side2", 5)
 
   Thread.sleep(60000)

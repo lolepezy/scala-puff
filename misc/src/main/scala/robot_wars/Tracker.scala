@@ -1,7 +1,6 @@
-package tests.actors.robot_wars
+package robot_wars
 
 import akka.actor.Actor
-import akka.actor.IO
 import java.io.Writer
 import java.io.FileWriter
 

@@ -1,4 +1,4 @@
-package tests.actors.robot_wars
+package robot_wars
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -93,7 +93,7 @@ class Dispatcher(
   /**
    *
    */
-  private def createChildDispatchers: Unit = {
+  private def createChildDispatchers {
     val xm = (zoneX0 + zoneX1) / 2
     val ym = (zoneY0 + zoneY1) / 2
     val (xc1, xc2, yc1, yc2) = zoneRobots.foldLeft((0, 0, 0, 0))(

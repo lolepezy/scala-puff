@@ -1,9 +1,9 @@
-package tests.problems
+package exercises._99
 
 import org.junit.Test
 import org.junit.Assert._
-
 import TreeHelper._
+import org.junit.Test
 
 class Problem56 {
 

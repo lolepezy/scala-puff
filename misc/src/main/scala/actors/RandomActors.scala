@@ -1,15 +1,14 @@
-package tests.actors
+package actors
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.pattern._
 import org.junit._
 import scala.util.Random
 import akka.actor.PoisonPill
-import akka.actor.ActorSystem
 import scala.collection.mutable.BitSet
-import akka.dispatch.Future
-import akka.dispatch.Await
 import akka.util.duration._
+import akka.actor.actorRef2Scala
+import org.junit.Test
 
 case class Generate(begin: Int, count: Int)
 case class GeneratedChunk(begin: Int, chunk: List[Int])
