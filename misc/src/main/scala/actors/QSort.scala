@@ -1,5 +1,7 @@
 package actors
 
+import akka.actor.Actor
+
 /**
  * Actor-based qsort algorithm.
  *
@@ -19,6 +21,27 @@ package actors
  */
 class ActorQSort {
 
-  
-  
+  def generateActors = {
+
+  }
+
 }
+
+/**
+ * The list of element to be sent from one chunk-actor to another one.
+ */
+case class Elements[T](val elements: List[T])
+
+/**
+ *
+ */
+class ChunkScanner[T <% Ordered[T]](val chunk: Array[T]) extends Actor {
+
+  def receive = {
+    case _ =>
+  }
+
+}
+
+
+
