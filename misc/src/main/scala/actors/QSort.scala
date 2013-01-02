@@ -35,10 +35,42 @@ case class Elements[T](val elements: List[T])
 /**
  *
  */
-class ChunkScanner[T <% Ordered[T]](val chunk: Array[T]) extends Actor {
+class ChunkScanner[T <% Ordered[T]](val array: Array[T], val offset: Int) extends Actor {
+
+  private var spareSize = 0
 
   def receive = {
+    case x: Elements[T] => {
+      val e = x.elements
+      val esize = e.size
+      if (spareSize < esize) {
+        spareMoreElements
+      }
+      // could not find enough space to spare
+      if (spareSize < esize) {
+        if (spareSize > 0)
+          resendToNextActor(e)
+        else {
+          // place "spareSize" of them here and send other to other actors
+          
+        }
+      }
+
+      insertElements(e)
+    }
     case _ =>
+  }
+
+  def spareMoreElements {
+
+  }
+
+  def resendToNextActor(e: List[T]) {
+
+  }
+
+  def insertElements(e: List[T]) {
+
   }
 
 }
