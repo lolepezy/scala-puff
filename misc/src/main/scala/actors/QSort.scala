@@ -1,6 +1,8 @@
 package actors
 
 import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.Props
 
 /**
  * Actor-based qsort algorithm.
@@ -19,61 +21,105 @@ import akka.actor.Actor
  *
  *
  */
-class ActorQSort {
+object QSort {
 
-  def generateActors = {
+  /**
+   * Messages case classes.
+   *
+   * The list of element to be sent from one chunk-actor to another one.
+   */
+  case class Elements[T](val elements: List[T])
 
-  }
+  /**
+   * To be sent by an actor who stopped sending elements.
+   */
+  case class Finished(val actorName: String)
 
-}
+  case class Start[T](val pivot: T)
 
-/**
- * The list of element to be sent from one chunk-actor to another one.
- */
-case class Elements[T](val elements: List[T])
+  // more messages classes here if needed
 
-/**
- *
- */
-class ChunkScanner[T <% Ordered[T]](val array: Array[T], val offset: Int) extends Actor {
+  def apply[T <% Ordered[T]](array: Array[T]) = array.sorted
 
-  private var spareSize = 0
+  /**
+   * It's not in-place sort (yet)!
+   */
+  private def actorSort[T <% Ordered[T]](array: Array[T])(
+    parallelFactor: Int = Runtime.getRuntime().availableProcessors() * 2) = {
 
-  def receive = {
-    case x: Elements[T] => {
-      val e = x.elements
-      val esize = e.size
-      if (spareSize < esize) {
-        spareMoreElements
-      }
-      // could not find enough space to spare
-      if (spareSize < esize) {
-        if (spareSize > 0)
-          resendToNextActor(e)
-        else {
-          // place "spareSize" of them here and send other to other actors
-          
+    // 1) create "left" and "right" actors and give them array chunks
+    val system = ActorSystem("QSort")
+    val leftScanners = (0 to parallelFactor) map (i =>
+      system.actorOf(Props(new ChunkScanner(array, i)), name = "LeftScanner_" + i))
+    val rightScanners = (0 to parallelFactor) map (i =>
+      system.actorOf(Props(new ChunkScanner(array, i)), name = "RightScanner_" + i))
+
+    // 2) Create coordinator actor
+    val coordinator = new Actor {
+
+      private var finishedActors = Set[String]()
+
+      def receive = {
+        case Finished(actorName) => {
+          finishedActors += actorName
+          if (finishedActors.size == parallelFactor * 2) {
+            // all actors stopped their work, so we must regroup actors
+            // TODO 
+            
+          }
         }
+        case _ =>
       }
-
-      insertElements(e)
     }
-    case _ =>
+
+    // 3) 
   }
 
-  def spareMoreElements {
+  /**
+   *
+   */
+  class ChunkScanner[T <% Ordered[T]](val array: Array[T], val number: Int) extends Actor {
 
-  }
+    private var spareSize = 0
 
-  def resendToNextActor(e: List[T]) {
+    def receive = {
+      case x: Elements[T] => {
+        val e = x.elements
+        val esize = e.size
+        if (spareSize < esize) {
+          spareMoreElements
+        }
+        // could not find enough space to spare
+        if (spareSize < esize) {
+          if (spareSize > 0)
+            resendToNextActor(e)
+          else {
+            // place "spareSize" of them here and send other to other actors
 
-  }
+          }
+        }
 
-  def insertElements(e: List[T]) {
+        insertElements(e)
+      }
+      case _ =>
+    }
+
+    def spareMoreElements {
+
+    }
+
+    def resendToNextActor(e: List[T]) {
+
+    }
+
+    def insertElements(e: List[T]) {
+
+    }
 
   }
 
 }
+
 
 
 
