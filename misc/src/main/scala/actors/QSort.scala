@@ -3,6 +3,7 @@ package actors
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.actor.ActorRef
 
 /**
  * Actor-based qsort algorithm.
@@ -47,12 +48,26 @@ object QSort {
   private def actorSort[T <% Ordered[T]](array: Array[T])(
     parallelFactor: Int = Runtime.getRuntime().availableProcessors() * 2) = {
 
+    val actorsNumber = parallelFactor * 2
+
+    // make it not that simple
+    val pivot = array(array.length / 2)
+
     // 1) create "left" and "right" actors and give them array chunks
     val system = ActorSystem("QSort")
     val leftScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(new ChunkScanner(array, i)), name = "LeftScanner_" + i))
+      system.actorOf(Props(
+        new ChunkScanner(array, i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          def mustBeSwaped(value: T, pivot: T) = value > pivot
+        }), name = "LeftScanner_" + i))
+
     val rightScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(new ChunkScanner(array, i)), name = "RightScanner_" + i))
+      system.actorOf(Props(
+        new ChunkScanner(array, i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          def mustBeSwaped(value: T, pivot: T) = value < pivot
+        }), name = "RightScanner_" + i))
 
     // 2) Create coordinator actor
     val coordinator = new Actor {
@@ -65,7 +80,7 @@ object QSort {
           if (finishedActors.size == parallelFactor * 2) {
             // all actors stopped their work, so we must regroup actors
             // TODO 
-            
+
           }
         }
         case _ =>
@@ -78,17 +93,28 @@ object QSort {
   /**
    *
    */
-  class ChunkScanner[T <% Ordered[T]](val array: Array[T], val number: Int) extends Actor {
+  abstract class ChunkScanner[T <% Ordered[T]](
+    val array: Array[T],
+    val number: Int,
+    var pivot: T) extends Actor {
 
+    // TODO Make it something real
+    private val maxSize = 1
+
+    protected val chunkSize: Int
+
+    protected def mustBeSwaped(value: T, pivot: T): Boolean
+
+    private var receivedElements = Vector[T]()
     private var spareSize = 0
 
     def receive = {
       case x: Elements[T] => {
         val e = x.elements
         val esize = e.size
-        if (spareSize < esize) {
+        if (spareSize < esize)
           spareMoreElements
-        }
+
         // could not find enough space to spare
         if (spareSize < esize) {
           if (spareSize > 0)
@@ -104,8 +130,34 @@ object QSort {
       case _ =>
     }
 
-    def spareMoreElements {
+    private var currentOffset = number * chunkSize
 
+    def spareMoreElements {
+      val stop = false
+      val nextOffset = (number + 1) * chunkSize
+      var toSend = List[T]()
+      var listSize = 0
+      while (currentOffset < nextOffset) {
+        val a = array(currentOffset)
+        if (mustBeSwaped(pivot, a)) {
+          // add to the queue to send
+          toSend = a :: toSend
+          listSize += 1
+          // TODO Add marking empty spaces for the sent elements
+          if (listSize >= maxSize) {
+            receiver ! Elements(toSend)
+            toSend = List[T]()
+            listSize = 0
+          }
+        }
+        currentOffset += 1
+      }
+      if (!toSend.isEmpty)
+        receiver ! Elements(toSend)
+    }
+
+    def receiver: ActorRef = {
+      null
     }
 
     def resendToNextActor(e: List[T]) {
