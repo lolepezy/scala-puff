@@ -34,7 +34,7 @@ object QSort {
   /**
    * To be sent by an actor who stopped sending elements.
    */
-  case class Finished(val actorName: String)
+  case class Finished(val actorName: String, val elementCount: Int)
 
   case class Start[T](val pivot: T)
 
@@ -53,29 +53,15 @@ object QSort {
     // make it not that simple
     val pivot = array(array.length / 2)
 
-    // 1) create "left" and "right" actors and give them array chunks
     val system = ActorSystem("QSort")
-    val leftScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(
-        new ChunkScanner(array, i, pivot) {
-          val chunkSize = array.length / actorsNumber
-          def mustBeSwaped(value: T, pivot: T) = value > pivot
-        }), name = "LeftScanner_" + i))
 
-    val rightScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(
-        new ChunkScanner(array, i, pivot) {
-          val chunkSize = array.length / actorsNumber
-          def mustBeSwaped(value: T, pivot: T) = value < pivot
-        }), name = "RightScanner_" + i))
-
-    // 2) Create coordinator actor
-    val coordinator = new Actor {
+    // 1) Create coordinator actor
+    val coordinatorActor = system.actorOf(Props(new Actor {
 
       private var finishedActors = Set[String]()
 
       def receive = {
-        case Finished(actorName) => {
+        case Finished(actorName, elementCount) => {
           finishedActors += actorName
           if (finishedActors.size == parallelFactor * 2) {
             // all actors stopped their work, so we must regroup actors
@@ -85,9 +71,27 @@ object QSort {
         }
         case _ =>
       }
-    }
+    }))
+
+    // 2) create "left" and "right" actors and give them array chunks
+    val leftScanners = (0 to parallelFactor) map (i =>
+      system.actorOf(Props(
+        new ChunkScanner(array, i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          val isLeft = true
+          val coordinator = coordinatorActor
+        }), name = "LeftScanner_" + i))
+
+    val rightScanners = (0 to parallelFactor) map (i =>
+      system.actorOf(Props(
+        new ChunkScanner(array, i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          val isLeft = false
+          val coordinator = coordinatorActor
+        }), name = "RightScanner_" + i))
 
     // 3) 
+
   }
 
   /**
@@ -103,11 +107,15 @@ object QSort {
 
     protected val chunkSize: Int
 
-    protected def mustBeSwaped(value: T, pivot: T): Boolean
+    protected val isLeft: Boolean
+    protected val coordinator: ActorRef
 
     private var receivedElements = Vector[T]()
     private var spareSize = 0
-
+    
+    private var currentOffset = number * chunkSize
+    private var elementCount  = chunkSize
+    
     def receive = {
       case x: Elements[T] => {
         val e = x.elements
@@ -116,21 +124,11 @@ object QSort {
           spareMoreElements
 
         // could not find enough space to spare
-        if (spareSize < esize) {
-          if (spareSize > 0)
-            resendToNextActor(e)
-          else {
-            // place "spareSize" of them here and send other to other actors
-
-          }
-        }
-
         insertElements(e)
       }
       case _ =>
     }
 
-    private var currentOffset = number * chunkSize
 
     def spareMoreElements {
       val stop = false
@@ -154,14 +152,18 @@ object QSort {
       }
       if (!toSend.isEmpty)
         receiver ! Elements(toSend)
+
+      if (currentOffset == nextOffset) {
+        // we're at the end of the array
+        coordinator ! Finished(self.path.name, elementCount)
+      }
     }
 
+    private def mustBeSwaped(p: T, elem: T) = if (isLeft) p < elem else p > elem
+    
+    
     def receiver: ActorRef = {
-      null
-    }
-
-    def resendToNextActor(e: List[T]) {
-
+//      otherSideActors
     }
 
     def insertElements(e: List[T]) {
