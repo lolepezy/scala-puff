@@ -34,11 +34,35 @@ object QSort {
   /**
    * To be sent by an actor who stopped sending elements.
    */
-  case class Finished(val actorName: String, val elementCount: Int)
+  case class Finished(val actorId: String, val info: ScannerStatus)
 
-  case class Start[T](val pivot: T)
+  /**
+   * Initializing message for every sort step.
+   */
+  case class Start[T](val pivot: T, val isLeft: Boolean, val otherSideActors: List[ActorRef])
+
+  /**
+   * The message to send itself as a signal that scanner needs to
+   * continue scanning and sending elements.
+   */
+  case class Continue
+
+  case class ScannerStatus(val elementCount: Int)
 
   // more messages classes here if needed
+
+  /**
+   * Scanners tree structure.
+   */
+  sealed case class ScannerTree
+
+  case class ScannerSet[T](val scanners: List[T]) extends ScannerTree
+  case class ScannerBranch(val left: ScannerTree, val right: ScannerTree) extends ScannerTree
+
+  case class ScannerInfo(
+    val id: String,
+    val actor: ActorRef,
+    val elementCount: Int)
 
   def apply[T <% Ordered[T]](array: Array[T]) = array.sorted
 
@@ -48,49 +72,96 @@ object QSort {
   private def actorSort[T <% Ordered[T]](array: Array[T])(
     parallelFactor: Int = Runtime.getRuntime().availableProcessors() * 2) = {
 
-    val actorsNumber = parallelFactor * 2
+    val actorHalfNumber = parallelFactor
+    val actorsNumber = actorHalfNumber * 2
 
     // make it not that simple
     val pivot = array(array.length / 2)
 
     val system = ActorSystem("QSort")
 
+    var scanners = ScannerTree()
+    var scannerInfoMap = Map[String, ScannerInfo]()
+
+    /**
+     * Divide scanner left and right groups.
+     *
+     */
+    def regroupScanners(scanTree: ScannerTree): ScannerTree = {
+      scanTree match {
+        case ScannerSet(s) => {
+          val size = s.size
+          val middle = size / 2
+
+          val (left, right) = if (size % 2 == 0)
+            s.zipWithIndex.partition(_._2 < middle)
+          else {
+            val zipped = s.zipWithIndex.map(x => x)
+            val (l, r) = zipped.view.filter(_._2 != middle).partition(_._2 < middle)
+            (l, r)
+          }
+          def list[T, Y](x: Seq[(T, Y)]) = x.map(_._1).toList
+          ScannerBranch(ScannerSet(list(left)), ScannerSet(list(right)))
+        }
+        case ScannerBranch(left, right) => ScannerBranch(regroupScanners(left), regroupScanners(right))
+      }
+    }
+
     // 1) Create coordinator actor
     val coordinatorActor = system.actorOf(Props(new Actor {
 
-      private var finishedActors = Set[String]()
+      private var actorsInProcess = parallelFactor * 2
+      private var finishedActors = Map[String, ScannerStatus]()
+
+      private def allActorsDone = finishedActors.size == actorsInProcess
 
       def receive = {
-        case Finished(actorName, elementCount) => {
-          finishedActors += actorName
-          if (finishedActors.size == parallelFactor * 2) {
+        case Finished(actorId, ScannerStatus(elementCount)) => {
+          scannerInfoMap.get(actorId).map(sim => {
+//            ScannerInfo
+          })
+//          finishedActors += actorId -> scannerStatus
+          if (allActorsDone) {
             // all actors stopped their work, so we must regroup actors
-            // TODO 
-
+            // and start the new recursive step
+            scanners = regroupScanners(scanners)
           }
         }
         case _ =>
       }
     }))
 
-    // 2) create "left" and "right" actors and give them array chunks
-    val leftScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(
-        new ChunkScanner(array, i, pivot) {
-          val chunkSize = array.length / actorsNumber
-          val isLeft = true
-          val coordinator = coordinatorActor
-        }), name = "LeftScanner_" + i))
+    // Auxiliary stuff
+    def createScannerInfos(id: String, s: ActorRef) = {
+      val si = ScannerInfo(id, s, 0)
+      scannerInfoMap += id -> si
+      (s, si)
+    }
 
-    val rightScanners = (0 to parallelFactor) map (i =>
-      system.actorOf(Props(
-        new ChunkScanner(array, i, pivot) {
-          val chunkSize = array.length / actorsNumber
-          val isLeft = false
-          val coordinator = coordinatorActor
-        }), name = "RightScanner_" + i))
-
-    // 3) 
+    // 2) create scanners "left" ++ "right" scanning actors and give them array chunks
+    scanners = ScannerBranch(
+      ScannerSet(
+        (0 to actorHalfNumber).map(
+          i => {
+            val id = "scanner_" + i
+            createScannerInfos(id, system.actorOf(Props(
+              new ChunkScanner(array, i, pivot) {
+                val chunkSize = array.length / actorsNumber
+                val isLeft = true
+                val coordinator = coordinatorActor
+              }), name = id))
+          }).toList),
+      ScannerSet(
+        (0 to actorHalfNumber).map(
+          i => {
+            val id = "scanner_" + (actorHalfNumber + i)
+            createScannerInfos(id, system.actorOf(Props(
+              new ChunkScanner(array, actorHalfNumber + i, pivot) {
+                val chunkSize = array.length / actorsNumber
+                val isLeft = false
+                val coordinator = coordinatorActor
+              }), name = id))
+          }).toList))
 
   }
 
@@ -107,28 +178,40 @@ object QSort {
 
     protected val chunkSize: Int
 
-    protected val isLeft: Boolean
+    private var isLeft = false
+
+    private var otherSideActors = List[ActorRef]()
     protected val coordinator: ActorRef
 
     private var receivedElements = Vector[T]()
     private var spareSize = 0
-    
+
     private var currentOffset = number * chunkSize
-    private var elementCount  = chunkSize
-    
+    private var elementCount = chunkSize
+
     def receive = {
+
+      case Continue => spareMoreElements
+
       case x: Elements[T] => {
         val e = x.elements
         val esize = e.size
         if (spareSize < esize)
           spareMoreElements
 
-        // could not find enough space to spare
         insertElements(e)
+        spareMoreElements
       }
+
+      case x: Start[T] => {
+        isLeft = x.isLeft
+        pivot = x.pivot
+        otherSideActors = x.otherSideActors
+        spareMoreElements
+      }
+
       case _ =>
     }
-
 
     def spareMoreElements {
       val stop = false
@@ -141,7 +224,7 @@ object QSort {
           // add to the queue to send
           toSend = a :: toSend
           listSize += 1
-          // TODO Add marking empty spaces for the sent elements
+          // TODO Add marking empty spaces for the elements sent 
           if (listSize >= maxSize) {
             receiver ! Elements(toSend)
             toSend = List[T]()
@@ -155,15 +238,16 @@ object QSort {
 
       if (currentOffset == nextOffset) {
         // we're at the end of the array
-        coordinator ! Finished(self.path.name, elementCount)
+        coordinator ! Finished(self.path.name, ScannerStatus(elementCount))
+      } else {
+        self ! Continue
       }
     }
 
     private def mustBeSwaped(p: T, elem: T) = if (isLeft) p < elem else p > elem
-    
-    
+
     def receiver: ActorRef = {
-//      otherSideActors
+      null
     }
 
     def insertElements(e: List[T]) {
