@@ -56,7 +56,10 @@ object QSort {
    */
   sealed case class ScannerTree
 
-  case class ScannerSet[T](val scanners: List[T]) extends ScannerTree
+  /**
+   * The list of scanner ids.
+   */
+  case class ScannerSet(val scanners: List[String]) extends ScannerTree
   case class ScannerBranch(val left: ScannerTree, val right: ScannerTree) extends ScannerTree
 
   case class ScannerInfo(
@@ -83,6 +86,8 @@ object QSort {
     var scanners = ScannerTree()
     var scannerInfoMap = Map[String, ScannerInfo]()
 
+    def list[T, Y](x: Seq[(T, Y)]) = x.map(_._1).toList
+
     /**
      * Divide scanner left and right groups.
      *
@@ -96,11 +101,21 @@ object QSort {
           val (left, right) = if (size % 2 == 0)
             s.zipWithIndex.partition(_._2 < middle)
           else {
-            val zipped = s.zipWithIndex.map(x => x)
-            val (l, r) = zipped.view.filter(_._2 != middle).partition(_._2 < middle)
-            (l, r)
+            // chose depending on the size of the right and left element counts  
+            val zipped = s.zipWithIndex.collect(ei => scannerInfoMap.get(ei._1) match {
+              case Some(scannerInfo) => (ei._1, ei._2, scannerInfo)
+            })
+            def elemCount[T, Y](x: Seq[(T, Y, ScannerInfo)]) =
+              x.foldLeft(0)((sum, tuple) => sum + tuple._3.elementCount)
+
+            val (leftPart, rightPart) = zipped.view.filter(_._2 != middle).partition(_._2 < middle)
+            val (l, r) = if (elemCount(leftPart) > elemCount(rightPart.tail))
+              (leftPart, rightPart)
+            else
+              (leftPart :+ rightPart.head, rightPart.tail)
+
+            (l.map(x => (x._1, x._2)), r.map(x => (x._1, x._2)))
           }
-          def list[T, Y](x: Seq[(T, Y)]) = x.map(_._1).toList
           ScannerBranch(ScannerSet(list(left)), ScannerSet(list(right)))
         }
         case ScannerBranch(left, right) => ScannerBranch(regroupScanners(left), regroupScanners(right))
@@ -117,10 +132,10 @@ object QSort {
 
       def receive = {
         case Finished(actorId, ScannerStatus(elementCount)) => {
-          scannerInfoMap.get(actorId).map(sim => {
-//            ScannerInfo
-          })
-//          finishedActors += actorId -> scannerStatus
+          // TODO Make it not that ugly
+          scannerInfoMap.get(actorId).map(si =>
+            scannerInfoMap += actorId -> ScannerInfo(actorId, si.actor, elementCount))
+
           if (allActorsDone) {
             // all actors stopped their work, so we must regroup actors
             // and start the new recursive step
@@ -139,29 +154,30 @@ object QSort {
     }
 
     // 2) create scanners "left" ++ "right" scanning actors and give them array chunks
-    scanners = ScannerBranch(
-      ScannerSet(
-        (0 to actorHalfNumber).map(
-          i => {
-            val id = "scanner_" + i
-            createScannerInfos(id, system.actorOf(Props(
-              new ChunkScanner(array, i, pivot) {
-                val chunkSize = array.length / actorsNumber
-                val isLeft = true
-                val coordinator = coordinatorActor
-              }), name = id))
-          }).toList),
-      ScannerSet(
-        (0 to actorHalfNumber).map(
-          i => {
-            val id = "scanner_" + (actorHalfNumber + i)
-            createScannerInfos(id, system.actorOf(Props(
-              new ChunkScanner(array, actorHalfNumber + i, pivot) {
-                val chunkSize = array.length / actorsNumber
-                val isLeft = false
-                val coordinator = coordinatorActor
-              }), name = id))
-          }).toList))
+    val lefts = (0 to actorHalfNumber).map(i => {
+      val id = "scanner_" + i
+      val actor = system.actorOf(Props(
+        new ChunkScanner(array, actorHalfNumber + i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          val isLeft = false
+          val coordinator = coordinatorActor
+        }), name = id)
+      (id, actor)
+    })
+
+    val rights = (0 to actorHalfNumber).map(i => {
+      val id = "scanner_" + (actorHalfNumber + i)
+      val actor = system.actorOf(Props(
+        new ChunkScanner(array, actorHalfNumber + i, pivot) {
+          val chunkSize = array.length / actorsNumber
+          val isLeft = false
+          val coordinator = coordinatorActor
+        }), name = id)
+      (id, actor)
+    })
+
+    scanners = ScannerBranch(ScannerSet(list(lefts)), ScannerSet(list(rights)))
+    List(lefts, rights).foreach(_.foreach(x => createScannerInfos(x._1, x._2)))
 
   }
 
