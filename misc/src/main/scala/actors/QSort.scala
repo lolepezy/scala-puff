@@ -54,7 +54,7 @@ object QSort {
   /**
    * Scanners tree structure.
    */
-  sealed case class ScannerTree
+  sealed class ScannerTree
 
   /**
    * The list of scanner ids.
@@ -83,7 +83,7 @@ object QSort {
 
     val system = ActorSystem("QSort")
 
-    var scanners = ScannerTree()
+    var scanners = new ScannerTree()
     var scannerInfoMap = Map[String, ScannerInfo]()
 
     def list[T, Y](x: Seq[(T, Y)]) = x.map(_._1).toList

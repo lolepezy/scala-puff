@@ -5,19 +5,10 @@ import akka.actor.ActorRef
 import akka.actor.Cancellable
 import akka.actor.PoisonPill
 import akka.actor.actorRef2Scala
-import akka.util.Duration
-import akka.util.duration.intToDurationInt
 import akka.actor.ActorLogging
-import akka.util.Duration
-import robot_wars.RobotPosition
-import robot_wars.RobotMessage
-import robot_wars.RobotId
-import robot_wars.NewDispatcher
-import robot_wars.Dead
-import robot_wars.Damage
-import robot_wars.CustomMessage
-import robot_wars.AnyMessage
-import robot_wars.Act
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 /**
  * The basic position class.
@@ -54,7 +45,7 @@ abstract class Robot(val id: String,
   val tracker: ActorRef)
   extends Actor with ActorLogging {
 
-  val responseTime: Duration
+  val responseTime: FiniteDuration
   val initialDelay = 10 milliseconds
   val sightDistance: Int;
 
@@ -71,10 +62,13 @@ abstract class Robot(val id: String,
    * race conditions but instead send the message Act
    * to robot itself.
    */
+  
+
   override def preStart = {
-    schedule = context.system.scheduler.schedule(initialDelay, responseTime)({
+    // TODO Rework it with implicit
+    schedule = context.system.scheduler.schedule(initialDelay, responseTime)({ 
       self ! Act
-    })
+    })(context.system.dispatcher)
     // send initial position to the dispatcher 
     positionDispatcher ! RobotPosition(RobotId(id, side), self, position)
     log.debug("Starting robot " + id);
@@ -175,5 +169,4 @@ abstract class Robot(val id: String,
   protected final def enemies = neighbors.filter(_.robotId.side != side)
 
   protected final def myId = RobotId(id, side)
-
 }

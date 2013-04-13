@@ -40,11 +40,11 @@ class SampleTest {
     new Exercise1().whileCheck()
   }
 
-  @Test def array() {
+  @Test def array() = {
     val N = 33;
     val bits = Array.ofDim[Boolean](N, N, N, N);
     val x = bits(0)(0)(0)(0)
-    x;
+    x
   }
 
   @Test def perfTest1 {

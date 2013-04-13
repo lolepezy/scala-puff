@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 
 case class Start
 
-case class RobotMessage
+class RobotMessage
 
 /**
  * Message for a dispatcher that robot is dead.

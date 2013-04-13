@@ -1,6 +1,6 @@
 package robot_wars
 
-import akka.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorRef
 import scala.util.Random
 import scala.annotation.tailrec

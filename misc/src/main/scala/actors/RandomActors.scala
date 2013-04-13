@@ -6,7 +6,7 @@ import org.junit._
 import scala.util.Random
 import akka.actor.PoisonPill
 import scala.collection.mutable.BitSet
-import akka.util.duration._
+import scala.concurrent.duration._
 import akka.actor.actorRef2Scala
 import org.junit.Test
 
